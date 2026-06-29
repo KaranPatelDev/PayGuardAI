@@ -1,0 +1,41 @@
+{
+  "summary": "Iteration-3 testing complete: Backend OCR endpoint (POST /api/ai/parse-invoice) + DialogDescription a11y fix on Customer/Invoice/Payment dialogs. All 7 backend pytest cases pass (OCR happy-path, unsupported-mime 400, unauth 401, customer-matching, demo login, dashboard, invoices list). Frontend Playwright E2E confirmed: OCR upload via hidden file input auto-fills invoice_number='INV-TEST-OCR-9012', amount='50000', due_date='2026-03-15' within ~20s using Gemini 2.5 Pro; ALL Radix 'Missing Description or aria-describedby for DialogContent' warnings are silenced (0 warnings across Add-customer, Add-invoice, Add-payment dialogs).",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Add invoice dialog — OCR upload label (Invoices.jsx line 90)",
+        "issues": [
+          "Loading text reads 'Extracting with Claude…' but the OCR backend actually uses Gemini 2.5 Pro. Cosmetic copy mismatch; should say 'Extracting with AI…' or 'Extracting with Gemini…' for consistency with the actual provider in ai_service.py."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_ocr_invoice.py",
+    "/app/test_reports/pytest/iteration_3_results.xml"
+  ],
+  "action_items": [
+    "Optional: update Invoices.jsx line 90 copy from 'Extracting with Claude…' to 'Extracting with AI…' (or 'Gemini') — backend uses Gemini 2.5 Pro per ai_service.py."
+  ],
+  "critical_code_review_comments": [
+    "ai_service.py declares EMERGENT_LLM_KEY twice (lines 11 and 73) — harmless duplicate, but should be cleaned up.",
+    "ai_service.py parse_invoice_file() docstring still says 'using Claude Sonnet 4.5 vision' but the code uses ('gemini','gemini-2.5-pro'). Update docstring to match implementation.",
+    "server.py /api/ai/parse-invoice correctly validates allowed MIME types and 10MB size cap, handles OCR errors with 502 fallback, and does customer auto-matching via case-insensitive regex — implementation is solid.",
+    "Invoices.jsx onOcrUpload: clears e.target.value early so user can re-upload the same file — good UX. Sets ocrLoading state and uses toast for both success/error — good.",
+    "Default form values in Invoices.jsx use 0 for amount/tax which auto-fill correctly via `Number(data.amount) || f.amount` (falsy 0 means fallback). When OCR returns 0 for tax_amount (no tax in invoice), this preserves the existing 0 — works as intended.",
+    "InvoiceDetail.jsx Record Payment dialog uses default browser <input type='date'> (not shadcn Calendar component) — minor UX inconsistency from prior iterations; not new in this iteration."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_ocr_invoice.py (new pytest file with 7 test cases)"
+  ],
+  "success_rate": { "backend": "100% (7/7)", "frontend": "100% (OCR autofill + 0 a11y warnings)" },
+  "test_credentials": "Demo: demo@payguard.ai / demo123",
+  "seed_data_creation": "No new seed data. Used existing /tmp/test_invoice.jpg (a test JPG that contains 'ABC Traders' / INV-TEST-OCR-9012 / ₹50000).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iteration-3 OCR + a11y fully verified. /tmp/test_invoice.jpg is the canonical test fixture (Gemini extracted: invoice_number=INV-TEST-OCR-9012, amount=50000, due_date=2026-03-15, customer_business_name=ABC Traders). The customer 'ABC Traders' is auto-matched to a seeded customer in the demo account (matched_customer_id returned). OCR latency ~15-20s end-to-end; tests allow 60s timeout. All DialogDescription a11y fixes verified — 0 Radix warnings on Customer/Invoice/Payment dialogs.",
+  "rca of the issue": "No issues to RCA — all tests passed. Only minor cosmetic copy mismatch ('Extracting with Claude…' vs actual Gemini provider) reported for polish."
+}

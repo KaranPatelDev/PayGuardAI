@@ -1,0 +1,130 @@
+{
+  "theme": "Light",
+  "archetype": "Archetype 1 (Organic & Earthy) mixed with Archetype 4 (Swiss/High-Contrast)",
+  "vibe": "Clean, calm, premium, trustworthy. An investor-demo ready B2B SaaS for Indian MSMEs.",
+  "typography": {
+    "heading_font": "Outfit",
+    "body_font": "Manrope",
+    "scale": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tight font-semibold",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight font-medium",
+      "h3": "text-xl sm:text-2xl font-medium",
+      "h4": "text-lg sm:text-xl font-medium",
+      "body": "text-base leading-relaxed",
+      "small": "text-sm",
+      "tiny_label": "text-xs uppercase tracking-[0.2em] font-bold"
+    },
+    "installation": "Ensure Outfit and Manrope are imported via Google Fonts in index.css"
+  },
+  "colors": {
+    "background": {
+      "app": "#F9FAFB",
+      "card": "#FFFFFF",
+      "glass": "bg-white/70 backdrop-blur-xl"
+    },
+    "text": {
+      "primary": "#111827",
+      "secondary": "#4B5563",
+      "muted": "#9CA3AF"
+    },
+    "primary": {
+      "DEFAULT": "#0A3B2C",
+      "hover": "#072A1F",
+      "foreground": "#FFFFFF"
+    },
+    "accent": {
+      "sage": "#8A9A86",
+      "bone": "#E8E6E1"
+    },
+    "semantic": {
+      "success": {
+        "bg": "#ECFDF5",
+        "text": "#059669",
+        "border": "#A7F3D0"
+      },
+      "warning": {
+        "bg": "#FFFBEB",
+        "text": "#D97706",
+        "border": "#FDE68A"
+      },
+      "danger": {
+        "bg": "#FEF2F2",
+        "text": "#DC2626",
+        "border": "#FECACA"
+      },
+      "info": {
+        "bg": "#EFF6FF",
+        "text": "#2563EB",
+        "border": "#BFDBFE"
+      }
+    },
+    "borders": {
+      "default": "#E5E7EB",
+      "focus": "#0A3B2C"
+    }
+  },
+  "spacing_and_layout": {
+    "general": "Use generous spacing. p-6 or p-8 for cards.",
+    "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+    "dashboard_grid": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6",
+    "bento_grid": "grid grid-cols-1 md:grid-cols-8 lg:grid-cols-12 gap-8",
+    "sidebar": "w-64 flex-shrink-0 border-r border-gray-200 bg-white",
+    "topbar": "h-16 border-b border-gray-200 bg-white/70 backdrop-blur-xl sticky top-0 z-40"
+  },
+  "surfaces_and_components": {
+    "cards": "bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200",
+    "buttons": {
+      "primary": "bg-[#0A3B2C] text-white hover:bg-[#072A1F] rounded-lg px-4 py-2 font-medium transition-colors",
+      "secondary": "bg-white text-[#111827] border border-gray-200 hover:bg-gray-50 rounded-lg px-4 py-2 font-medium transition-colors"
+    },
+    "badges": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
+    "glassmorphism": "bg-white/70 backdrop-blur-xl border-b border-white/40",
+    "inputs": "bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-[#0A3B2C] focus:border-[#0A3B2C] block w-full p-2.5"
+  },
+  "motion_and_interactions": {
+    "hover": "Subtle transform translate-y-[-2px] and shadow elevation for interactive cards",
+    "transitions": "transition-all duration-200 ease-in-out",
+    "focus": "focus:ring-2 focus:ring-offset-1 focus:ring-[#0A3B2C]",
+    "loading": "Use skeleton loaders (animate-pulse) with bg-gray-200 for charts and lists before data loads."
+  },
+  "data_formatting": {
+    "currency": "Always format money as Indian Rupees. Example: const formatINR = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);"
+  },
+  "icons": {
+    "library": "lucide-react",
+    "style": "Use uniform stroke-width (1.5 or 2). Ensure icons match the text color of the parent container or have semantic coloring (e.g., green check, red alert)."
+  },
+  "media": {
+    "image_urls": [
+      {
+        "url": "https://images.pexels.com/photos/7580761/pexels-photo-7580761.jpeg",
+        "description": "Confident Indian businessman in blue suit holding papers",
+        "category": "testimonial_or_about"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1560221328-12fe60f83ab8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNDR8MHwxfHNlYXJjaHwyfHxmaW5hbmNpYWwlMjBncmFwaCUyMGFic3RyYWN0fGVufDB8fHx8MTc4MjYxNzg0NHww&ixlib=rb-4.1.0&q=85",
+        "description": "Close-up of monitor displaying financial graphs",
+        "category": "feature_dashboard"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1454117096348-e4abbeba002c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGdlb21ldHJpYyUyMGJhY2tncm91bmQlMjBsaWdodHxlbnwwfHx8fDE3ODI2MTc4NTZ8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Abstract white geometric background",
+        "category": "hero_background"
+      }
+    ]
+  },
+  "accessibility_and_testing": {
+    "testing_attributes": "All interactive and key informational elements MUST include a data-testid attribute (e.g., data-testid=\"invoice-submit-button\").",
+    "contrast": "Ensure text contrast meets APCA/WCAG standards. Do not use light gray text on white backgrounds."
+  },
+  "instructions_to_main_agent": [
+    "Strictly follow the color palette. Do NOT use purple, violet, or generic bright blue.",
+    "Do NOT use default Inter/Roboto fonts. Use Outfit for headings and Manrope for body text.",
+    "Implement the Dashboard with Shadcn UI components but override the default rounding and border colors to match this file.",
+    "Ensure all monetary values use Indian Rupee (INR) format (e.g., ₹1,25,000) using the Intl.NumberFormat API.",
+    "The Risk/Status badges must use the semantic colors defined (emerald, amber, orange, red).",
+    "For the Landing Page, create a premium, clean, high-contrast look using generous padding, bento grids, and the provided images.",
+    "Implement a smooth sidebar + topbar layout for the post-login experience.",
+    "Use lucide-react for all icons."
+  ]
+}

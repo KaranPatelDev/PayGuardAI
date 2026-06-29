@@ -1,0 +1,26 @@
+{
+  "summary": "First-iteration smoke test of PayGuard AI. Backend (login, dashboard summary, customers, AI follow-up, auth-ownership) and frontend (landing, login, dashboard with KPIs/charts/INR, customers list, invoices list, followups page, logout) all working. Zero console errors.",
+  "tested_scope": ["frontend", "backend", "auth", "integration"],
+  "passed": [
+    "POST /api/auth/login with demo@payguard.ai/demo123 returns JWT (188-char token)",
+    "GET /api/dashboard/summary returns 200 with total_invoiced=689356, total_pending=632716, total_overdue=430700, total_recovered=56640, overdue_count=2, avg_delay=30, collection_efficiency=8.2",
+    "GET /api/customers returns 5 seeded customers: ABC Traders, Shree Ganesh Manufacturing, Raj Steel Corporation, Om Packaging Solutions, Krishna Hardware Mart",
+    "GET /api/customers without Authorization header returns 401 (ownership/auth guard works)",
+    "POST /api/ai/generate-followup returns 200 with whatsapp/email_subject/email_body/call_script fields populated and _source field set",
+    "Landing page (/) renders hero with PayGuard branding, demo CTA, 0 console errors",
+    "/login: data-testid login-email-input, login-password-input, login-submit-btn work; redirects to /app/dashboard",
+    "Dashboard shows KPI cards (Total Invoiced ₹6.89 L, Pending ₹6.33 L, Overdue ₹4.31 L, Recovered ₹56.6K, High-risk 0, Avg delay 30d, Collection 8.2%, Customers 5) and charts (Pending vs Recovered, Status distribution visible)",
+    "INR formatting with ₹ and Indian style (L/K suffixes) verified on dashboard",
+    "/app/customers lists all 5 seeded customers",
+    "/app/invoices lists 5 invoices with statuses Overdue, Paid, Due Today, Due Soon and risk badges",
+    "/app/followups page loads with followup-invoice-select control",
+    "btn-logout clears session and redirects to /login",
+    "Zero console errors across landing, login, dashboard, customers, invoices, followups navigation"
+  ],
+  "failed": [],
+  "action_items": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "retest_needed": false,
+  "full_testing_deferred": true,
+  "notes": "Smoke-level coverage only. Deeper flows deferred to full testing pass: add-customer/add-invoice dialogs, add-payment + auto-flip-to-paid, AI followup generate+copy+save, cashflow tiles, reports generation, settings save, register flow, customer detail recovery timeline, search/filter combos."
+}
