@@ -81,6 +81,7 @@ const faqs = [
   ["Is this useful for small businesses?", "Yes. It is designed for owners and teams that need a simple way to track pending bills without complex enterprise software."],
   ["Can accountants use it?", "Yes. Accountants can use it to monitor receivables, overdue invoices, payment records, and recovery status for business clients."],
   ["What are the pricing plans?", "PayGuard AI offers Free, Starter (₹799/mo), Growth (₹2,499/mo), and Enterprise tiers. Annual billing saves up to 27%. All paid plans include unlimited invoices, advanced risk scoring, and priority support."],
+  ["How do I reset my password?", "Click 'Forgot password?' on the login page, enter your email, and follow the link sent to you. The link expires in 15 minutes."],
 ];
 
 const Section = ({ title, children, icon: Icon }) => (

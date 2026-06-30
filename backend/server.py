@@ -18,9 +18,10 @@ load_dotenv(ROOT_DIR / ".env")
 
 from logging_config import setup_logging, get_logger
 from middleware import RequestLoggingMiddleware, register_exception_handler
-from auth_utils import hash_password, verify_password, create_access_token, get_current_user_id
+from auth_utils import hash_password, verify_password, create_access_token, get_current_user_id, create_reset_token, decode_reset_token
 from models import (
     UserRegister, UserLogin, UserPublic, TokenResponse,
+    ForgotPasswordRequest, ResetPasswordRequest,
     CustomerCreate, CustomerUpdate, Customer,
     InvoiceCreate, InvoiceUpdate, Invoice,
     PaymentCreate, Payment,
@@ -36,6 +37,7 @@ from db import (
     engine, async_session, init_db, close_db,
     User, Customer, Invoice, Payment, Followup, Settings,
 )
+from email_service import send_password_reset_email
 
 setup_logging()
 logger = get_logger("payguard.server")
@@ -241,6 +243,62 @@ async def me(user_id: str = Depends(get_current_user_id)):
         if not user_row:
             raise HTTPException(status_code=404, detail="User not found")
         return await _user_to_public_dict(user_row)
+
+
+_forgot_password_rate_limit: dict = {}
+
+
+@api.post("/auth/forgot-password")
+async def forgot_password(payload: ForgotPasswordRequest):
+    email = payload.email.lower()
+    now = time.time()
+    last_request = _forgot_password_rate_limit.get(email, 0)
+    if now - last_request < 60:
+        return {"ok": True}
+    _forgot_password_rate_limit[email] = now
+
+    async with async_session() as session:
+        result = await session.execute(select(User).where(User.email == email))
+        user_row = result.scalar_one_or_none()
+        if not user_row:
+            return {"ok": True}
+
+        reset_token = create_reset_token(user_row.id)
+        await send_password_reset_email(
+            to_email=user_row.email,
+            user_name=user_row.full_name,
+            token=reset_token,
+        )
+        logger.info(
+            "Password reset requested",
+            extra={"event": "auth.forgot_password", "user_id": user_row.id, "email": email},
+        )
+        return {"ok": True}
+
+
+@api.post("/auth/reset-password")
+async def reset_password(payload: ResetPasswordRequest):
+    user_id = decode_reset_token(payload.token)
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+
+    if len(payload.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+
+    async with async_session() as session:
+        result = await session.execute(select(User).where(User.id == user_id))
+        user_row = result.scalar_one_or_none()
+        if not user_row:
+            raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+
+        user_row.password_hash = hash_password(payload.new_password)
+        user_row.updated_at = utcnow_iso()
+        await session.commit()
+        logger.info(
+            "Password reset successful",
+            extra={"event": "auth.reset_password", "user_id": user_id},
+        )
+        return {"ok": True}
 
 
 # ============== CUSTOMERS ==============

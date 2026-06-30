@@ -47,6 +47,15 @@ class TokenResponse(BaseModel):
     user: UserPublic
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
 # ---------- CUSTOMER ----------
 class CustomerBase(BaseModel):
     business_name: str

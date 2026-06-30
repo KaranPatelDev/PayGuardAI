@@ -18,6 +18,8 @@ import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
 import HowToUse from "@/pages/HowToUse";
 import Pricing from "@/pages/Pricing";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 
 const PublicHowToUse = () => (
   <div className="min-h-screen bg-[#F9FAFB]">
@@ -28,6 +30,18 @@ const PublicHowToUse = () => (
 const PublicPricing = () => (
   <div className="min-h-screen bg-[#F9FAFB]">
     <Pricing />
+  </div>
+);
+
+const PublicForgotPassword = () => (
+  <div className="min-h-screen bg-[#F9FAFB]">
+    <ForgotPassword />
+  </div>
+);
+
+const PublicResetPassword = () => (
+  <div className="min-h-screen bg-[#F9FAFB]">
+    <ResetPassword />
   </div>
 );
 
@@ -47,6 +61,8 @@ function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/how-to-use" element={<PublicHowToUse />} />
             <Route path="/pricing" element={<PublicPricing />} />
+            <Route path="/forgot-password" element={<PublicForgotPassword />} />
+            <Route path="/reset-password" element={<PublicResetPassword />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
