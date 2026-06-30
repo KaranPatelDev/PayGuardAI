@@ -1,6 +1,8 @@
 """PayGuard AI - PostgreSQL database (SQLAlchemy async + asyncpg)."""
 import os
 import time
+import ssl
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import String, Float, Integer, Text, JSON, ForeignKey, text
@@ -11,9 +13,26 @@ from logging_config import get_logger
 logger = get_logger("payguard.db")
 
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/payguard_ai")
+def _clean_database_url(url: str) -> str:
+    """Strip non-asyncpg params (sslmode, channel_binding) from Neon URLs."""
+    parsed = urlparse(url)
+    params = parse_qs(parsed.query)
+    clean_params = {k: v[0] for k, v in params.items() if k not in ("sslmode", "channel_binding")}
+    clean_query = urlencode(clean_params) if clean_params else ""
+    return urlunparse(parsed._replace(query=clean_query))
 
-engine = create_async_engine(DATABASE_URL, echo=False, pool_size=10, max_overflow=20)
+
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/payguard_ai")
+DATABASE_URL = _clean_database_url(DATABASE_URL)
+
+connect_args = {}
+if "neon.tech" in DATABASE_URL:
+    connect_args["ssl"] = True
+
+engine = create_async_engine(
+    DATABASE_URL, echo=False, pool_size=10, max_overflow=20,
+    connect_args=connect_args,
+)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
