@@ -24,23 +24,47 @@ export default function Payments() {
           testid="payments-empty-state"
         />
       ) : (
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600"><tr><th className="text-left px-5 py-3 font-medium">Date</th><th className="text-left px-5 py-3 font-medium">Customer</th><th className="text-left px-5 py-3 font-medium">Invoice</th><th className="text-left px-5 py-3 font-medium">Amount</th><th className="text-left px-5 py-3 font-medium">Mode</th><th className="text-left px-5 py-3 font-medium">Reference</th></tr></thead>
-          <tbody>
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-gray-600"><tr><th className="text-left px-5 py-3 font-medium">Date</th><th className="text-left px-5 py-3 font-medium">Customer</th><th className="text-left px-5 py-3 font-medium">Invoice</th><th className="text-left px-5 py-3 font-medium">Amount</th><th className="text-left px-5 py-3 font-medium">Mode</th><th className="text-left px-5 py-3 font-medium">Reference</th></tr></thead>
+                <tbody>
+                  {list.map((p) => (
+                    <tr key={p.id} className="border-t border-gray-100">
+                      <td className="px-5 py-3">{formatDate(p.payment_date)}</td>
+                      <td className="px-5 py-3 font-medium">{p.customer_name}</td>
+                      <td className="px-5 py-3 text-gray-600">{p.invoice_number}</td>
+                      <td className="px-5 py-3 font-medium text-emerald-700">{formatINR(p.amount)}</td>
+                      <td className="px-5 py-3">{p.payment_mode}</td>
+                      <td className="px-5 py-3 text-gray-500">{p.reference_number || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
             {list.map((p) => (
-              <tr key={p.id} className="border-t border-gray-100">
-                <td className="px-5 py-3">{formatDate(p.payment_date)}</td>
-                <td className="px-5 py-3 font-medium">{p.customer_name}</td>
-                <td className="px-5 py-3 text-gray-600">{p.invoice_number}</td>
-                <td className="px-5 py-3 font-medium text-emerald-700">{formatINR(p.amount)}</td>
-                <td className="px-5 py-3">{p.payment_mode}</td>
-                <td className="px-5 py-3 text-gray-500">{p.reference_number || "—"}</td>
-              </tr>
+              <div key={p.id} className="bg-white rounded-xl border border-gray-200 p-4 space-y-2" data-testid={`payment-card-${p.id}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 truncate">{p.customer_name}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{p.invoice_number} · {formatDate(p.payment_date)}</p>
+                  </div>
+                  <p className="text-sm font-semibold text-emerald-700 shrink-0">{formatINR(p.amount)}</p>
+                </div>
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>{p.payment_mode}</span>
+                  <span>{p.reference_number || "—"}</span>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </div>
+        </>
       )}
     </div>
   );

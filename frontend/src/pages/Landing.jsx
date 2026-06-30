@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck, Sparkles, TrendingUp, FileText, Users, Bell, ArrowRight, CheckCircle2, MessageSquare, Phone, Mail, Crown } from "lucide-react";
+import { ShieldCheck, Sparkles, TrendingUp, FileText, Users, Bell, ArrowRight, CheckCircle2, MessageSquare, Phone, Mail, Crown, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatINR } from "@/lib/format";
 
@@ -8,6 +9,8 @@ const Section = ({ children, className = "" }) => (
 );
 
 export default function Landing() {
+  const [mobileMenu, setMobileMenu] = useState(false);
+
   return (
     <div className="bg-[#F9FAFB] text-gray-900">
       {/* Top bar */}
@@ -19,13 +22,26 @@ export default function Landing() {
             </div>
             <span className="font-display text-lg font-semibold tracking-tight">PayGuard AI</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-2">
             <Link to="/how-to-use" data-testid="landing-how-to-use-link"><Button variant="ghost" className="rounded-lg">How to Use</Button></Link>
             <Link to="/pricing" data-testid="landing-pricing-link"><Button variant="ghost" className="rounded-lg">Pricing</Button></Link>
             <Link to="/login" data-testid="landing-login-link"><Button variant="ghost" className="rounded-lg">Log in</Button></Link>
             <Link to="/register" data-testid="landing-signup-link"><Button className="rounded-lg bg-[#0A3B2C] hover:bg-[#072A1F] text-white">Get started</Button></Link>
           </div>
+          <div className="flex sm:hidden items-center gap-2">
+            <Link to="/login" data-testid="landing-login-link-mobile"><Button variant="ghost" size="sm" className="rounded-lg">Log in</Button></Link>
+            <Link to="/register" data-testid="landing-signup-link-mobile"><Button size="sm" className="rounded-lg bg-[#0A3B2C] hover:bg-[#072A1F] text-white">Get started</Button></Link>
+            <button onClick={() => setMobileMenu(!mobileMenu)} className="p-2 -mr-2 rounded-lg hover:bg-gray-100" aria-label="Menu">
+              {mobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </Section>
+        {mobileMenu && (
+          <div className="sm:hidden border-t border-gray-200 bg-white px-4 py-3 space-y-1">
+            <Link to="/how-to-use" onClick={() => setMobileMenu(false)} className="block px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100">How to Use</Link>
+            <Link to="/pricing" onClick={() => setMobileMenu(false)} className="block px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100">Pricing</Link>
+          </div>
+        )}
       </header>
 
       {/* Hero */}

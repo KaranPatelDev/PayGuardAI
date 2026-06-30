@@ -21,16 +21,16 @@ const Panel = ({ title, children }) => (
 
 function InvoiceHeader({ inv }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6">
-      <div className="flex items-start justify-between flex-wrap gap-4">
-        <div>
+    <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="min-w-0">
           <p className="text-xs uppercase tracking-[0.15em] font-bold text-gray-500">Invoice</p>
-          <h1 className="font-display text-3xl font-semibold tracking-tight" data-testid="invoice-number">{inv.invoice_number}</h1>
+          <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight" data-testid="invoice-number">{inv.invoice_number}</h1>
           {inv.customer && <Link to={`/app/customers/${inv.customer.id}`} className="text-gray-600 hover:text-[#0A3B2C]">{inv.customer.business_name}</Link>}
           <div className="flex flex-wrap gap-2 mt-3"><StatusBadge status={inv.status} />{inv.customer && <RiskBadge risk={inv.customer.risk_category} />}</div>
         </div>
-        <div className="text-right">
-          <p className="font-display text-3xl font-semibold">{formatINR(inv.pending_amount)}</p>
+        <div className="sm:text-right shrink-0">
+          <p className="font-display text-2xl sm:text-3xl font-semibold">{formatINR(inv.pending_amount)}</p>
           <p className="text-xs text-gray-500">pending of {formatINR(inv.total_amount)}</p>
           {inv.overdue_days > 0 && <p className="text-sm text-orange-600 mt-1">{inv.overdue_days} days overdue</p>}
         </div>
@@ -51,7 +51,7 @@ function PaymentDialog({ payOpen, setPayOpen, pay, setPay, onSave }) {
   return (
     <Dialog open={payOpen} onOpenChange={setPayOpen}>
       <DialogTrigger asChild><Button variant="outline" data-testid="btn-add-payment"><Plus className="w-4 h-4 mr-2" /> Add payment</Button></DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Record payment</DialogTitle>
           <DialogDescription>Enter the payment details to update this invoice's pending amount.</DialogDescription>

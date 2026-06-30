@@ -37,8 +37,8 @@ export default function Register() {
           <h1 className="font-display text-3xl font-semibold tracking-tight">Create your account</h1>
           <p className="text-sm text-gray-500 mt-1.5">Start recovering payments in minutes.</p>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2"><Label>Full name</Label><Input required value={form.full_name} onChange={(e) => set("full_name", e.target.value)} className="mt-1.5" data-testid="register-full-name" /></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="sm:col-span-2"><Label>Full name</Label><Input required value={form.full_name} onChange={(e) => set("full_name", e.target.value)} className="mt-1.5" data-testid="register-full-name" /></div>
           <div><Label>Email</Label><Input type="email" required value={form.email} onChange={(e) => set("email", e.target.value)} className="mt-1.5" data-testid="register-email" /></div>
           <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => set("phone", e.target.value)} className="mt-1.5" data-testid="register-phone" /></div>
           <div><Label>Business name</Label><Input required value={form.business_name} onChange={(e) => set("business_name", e.target.value)} className="mt-1.5" data-testid="register-business-name" /></div>

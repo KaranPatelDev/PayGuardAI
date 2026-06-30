@@ -34,30 +34,67 @@ function CustomerFilters({ search, setSearch, riskFilter, setRiskFilter }) {
 
 function CustomerTable({ list, onEdit, onDelete }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50 text-gray-600">
-          <tr><th className="text-left px-5 py-3 font-medium">Business</th><th className="text-left px-5 py-3 font-medium">Contact</th><th className="text-left px-5 py-3 font-medium">Pending</th><th className="text-left px-5 py-3 font-medium">Invoices</th><th className="text-left px-5 py-3 font-medium">Risk</th><th className="px-5 py-3" /></tr>
-        </thead>
-        <tbody>
-          {list.length === 0 ? (
-            <tr><td colSpan={6} className="text-center py-12 text-gray-400">No customers match your filters.</td></tr>
-          ) : list.map((c) => (
-            <tr key={c.id} className="border-t border-gray-100 hover:bg-gray-50/60" data-testid={`customer-row-${c.id}`}>
-              <td className="px-5 py-3"><Link to={`/app/customers/${c.id}`} className="font-medium text-gray-900 hover:text-[#0A3B2C]">{c.business_name}</Link><p className="text-xs text-gray-500">{c.city}{c.state ? `, ${c.state}` : ""}</p></td>
-              <td className="px-5 py-3">{c.contact_person || "—"}<p className="text-xs text-gray-500">{c.phone}</p></td>
-              <td className="px-5 py-3 font-medium">{formatINR(c.total_pending || 0)}</td>
-              <td className="px-5 py-3">{c.invoice_count || 0}</td>
-              <td className="px-5 py-3"><RiskBadge risk={c.risk_category} /></td>
-              <td className="px-5 py-3 text-right whitespace-nowrap">
+    <>
+      {/* Desktop table */}
+      <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-gray-600">
+              <tr><th className="text-left px-5 py-3 font-medium">Business</th><th className="text-left px-5 py-3 font-medium">Contact</th><th className="text-left px-5 py-3 font-medium">Pending</th><th className="text-left px-5 py-3 font-medium">Invoices</th><th className="text-left px-5 py-3 font-medium">Risk</th><th className="px-5 py-3" /></tr>
+            </thead>
+            <tbody>
+              {list.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-12 text-gray-400">No customers match your filters.</td></tr>
+              ) : list.map((c) => (
+                <tr key={c.id} className="border-t border-gray-100 hover:bg-gray-50/60" data-testid={`customer-row-${c.id}`}>
+                  <td className="px-5 py-3"><Link to={`/app/customers/${c.id}`} className="font-medium text-gray-900 hover:text-[#0A3B2C]">{c.business_name}</Link><p className="text-xs text-gray-500">{c.city}{c.state ? `, ${c.state}` : ""}</p></td>
+                  <td className="px-5 py-3">{c.contact_person || "—"}<p className="text-xs text-gray-500">{c.phone}</p></td>
+                  <td className="px-5 py-3 font-medium">{formatINR(c.total_pending || 0)}</td>
+                  <td className="px-5 py-3">{c.invoice_count || 0}</td>
+                  <td className="px-5 py-3"><RiskBadge risk={c.risk_category} /></td>
+                  <td className="px-5 py-3 text-right whitespace-nowrap">
+                    <button onClick={() => onEdit(c)} className="p-2 hover:bg-gray-100 rounded-lg" data-testid={`edit-customer-${c.id}`}><Pencil className="w-4 h-4 text-gray-600" /></button>
+                    <button onClick={() => onDelete(c.id)} className="p-2 hover:bg-red-50 rounded-lg" data-testid={`delete-customer-${c.id}`}><Trash2 className="w-4 h-4 text-red-600" /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {list.length === 0 ? (
+          <div className="text-center py-12 text-gray-400 text-sm">No customers match your filters.</div>
+        ) : list.map((c) => (
+          <div key={c.id} className="bg-white rounded-xl border border-gray-200 p-4 space-y-3" data-testid={`customer-card-${c.id}`}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <Link to={`/app/customers/${c.id}`} className="font-medium text-gray-900 hover:text-[#0A3B2C] block truncate">{c.business_name}</Link>
+                <p className="text-xs text-gray-500 mt-0.5">{c.contact_person}{c.phone ? ` · ${c.phone}` : ""}</p>
+                {(c.city || c.state) && <p className="text-xs text-gray-400 mt-0.5">{c.city}{c.state ? `, ${c.state}` : ""}</p>}
+              </div>
+              <RiskBadge risk={c.risk_category} />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500">Pending</p>
+                <p className="text-sm font-medium">{formatINR(c.total_pending || 0)}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-500">Invoices</p>
+                <p className="text-sm font-medium">{c.invoice_count || 0}</p>
+              </div>
+              <div className="flex gap-1">
                 <button onClick={() => onEdit(c)} className="p-2 hover:bg-gray-100 rounded-lg" data-testid={`edit-customer-${c.id}`}><Pencil className="w-4 h-4 text-gray-600" /></button>
                 <button onClick={() => onDelete(c.id)} className="p-2 hover:bg-red-50 rounded-lg" data-testid={`delete-customer-${c.id}`}><Trash2 className="w-4 h-4 text-red-600" /></button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -80,21 +117,21 @@ function CustomerDialog({ open, setOpen, editing, onSave }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editing ? "Edit" : "Add"} customer</DialogTitle>
           <DialogDescription>{editing ? "Update this customer's details." : "Add a new customer to start tracking their invoices and risk."}</DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2"><Label>Business name</Label><Input data-testid="cust-form-business-name" value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} /></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="sm:col-span-2"><Label>Business name</Label><Input data-testid="cust-form-business-name" value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} /></div>
           <div><Label>Contact person</Label><Input data-testid="cust-form-contact" value={form.contact_person} onChange={(e) => setForm({ ...form, contact_person: e.target.value })} /></div>
           <div><Label>Phone</Label><Input data-testid="cust-form-phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-          <div className="col-span-2"><Label>Email</Label><Input data-testid="cust-form-email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+          <div className="sm:col-span-2"><Label>Email</Label><Input data-testid="cust-form-email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
           <div><Label>City</Label><Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
           <div><Label>State</Label><Input value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} /></div>
           <div><Label>GST</Label><Input value={form.gst_number} onChange={(e) => setForm({ ...form, gst_number: e.target.value })} /></div>
           <div><Label>Payment terms (days)</Label><Input type="number" value={form.payment_terms} onChange={(e) => setForm({ ...form, payment_terms: +e.target.value })} /></div>
-          <div className="col-span-2"><Label>Credit limit (₹)</Label><Input type="number" value={form.credit_limit} onChange={(e) => setForm({ ...form, credit_limit: +e.target.value })} /></div>
+          <div className="sm:col-span-2"><Label>Credit limit (₹)</Label><Input type="number" value={form.credit_limit} onChange={(e) => setForm({ ...form, credit_limit: +e.target.value })} /></div>
         </div>
         <Button data-testid="cust-form-save-btn" onClick={save} className="bg-[#0A3B2C] hover:bg-[#072A1F] text-white">Save</Button>
       </DialogContent>

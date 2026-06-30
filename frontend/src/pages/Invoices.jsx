@@ -32,28 +32,69 @@ function InvoiceFilters({ search, setSearch, status, setStatus }) {
 
 function InvoiceTable({ list, onDelete }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50 text-gray-600">
-          <tr><th className="text-left px-5 py-3 font-medium">Invoice</th><th className="text-left px-5 py-3 font-medium">Customer</th><th className="text-left px-5 py-3 font-medium">Due</th><th className="text-left px-5 py-3 font-medium">Total</th><th className="text-left px-5 py-3 font-medium">Pending</th><th className="text-left px-5 py-3 font-medium">Status</th><th className="text-left px-5 py-3 font-medium">Risk</th><th /></tr>
-        </thead>
-        <tbody>
-          {list.length === 0 ? <tr><td colSpan={8} className="text-center py-12 text-gray-400">No invoices match your filters</td></tr> :
-            list.map((i) => (
-              <tr key={i.id} className="border-t border-gray-100 hover:bg-gray-50/60" data-testid={`invoice-row-${i.id}`}>
-                <td className="px-5 py-3"><Link className="font-medium text-gray-900 hover:text-[#0A3B2C]" to={`/app/invoices/${i.id}`}>{i.invoice_number}</Link></td>
-                <td className="px-5 py-3 text-gray-700">{i.customer_name}</td>
-                <td className="px-5 py-3">{formatDate(i.due_date)}{i.overdue_days > 0 && <p className="text-xs text-orange-600 mt-0.5">{i.overdue_days}d overdue</p>}</td>
-                <td className="px-5 py-3">{formatINR(i.total_amount)}</td>
-                <td className="px-5 py-3 font-medium">{formatINR(i.pending_amount)}</td>
-                <td className="px-5 py-3"><StatusBadge status={i.status} /></td>
-                <td className="px-5 py-3"><RiskBadge risk={i.customer_risk} /></td>
-                <td className="px-5 py-3"><button onClick={() => onDelete(i.id)} className="p-2 hover:bg-red-50 rounded-lg" data-testid={`delete-invoice-${i.id}`}><Trash2 className="w-4 h-4 text-red-600" /></button></td>
-              </tr>
-            ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {/* Desktop table */}
+      <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-gray-600">
+              <tr><th className="text-left px-5 py-3 font-medium">Invoice</th><th className="text-left px-5 py-3 font-medium">Customer</th><th className="text-left px-5 py-3 font-medium">Due</th><th className="text-left px-5 py-3 font-medium">Total</th><th className="text-left px-5 py-3 font-medium">Pending</th><th className="text-left px-5 py-3 font-medium">Status</th><th className="text-left px-5 py-3 font-medium">Risk</th><th /></tr>
+            </thead>
+            <tbody>
+              {list.length === 0 ? <tr><td colSpan={8} className="text-center py-12 text-gray-400">No invoices match your filters</td></tr> :
+                list.map((i) => (
+                  <tr key={i.id} className="border-t border-gray-100 hover:bg-gray-50/60" data-testid={`invoice-row-${i.id}`}>
+                    <td className="px-5 py-3"><Link className="font-medium text-gray-900 hover:text-[#0A3B2C]" to={`/app/invoices/${i.id}`}>{i.invoice_number}</Link></td>
+                    <td className="px-5 py-3 text-gray-700">{i.customer_name}</td>
+                    <td className="px-5 py-3">{formatDate(i.due_date)}{i.overdue_days > 0 && <p className="text-xs text-orange-600 mt-0.5">{i.overdue_days}d overdue</p>}</td>
+                    <td className="px-5 py-3">{formatINR(i.total_amount)}</td>
+                    <td className="px-5 py-3 font-medium">{formatINR(i.pending_amount)}</td>
+                    <td className="px-5 py-3"><StatusBadge status={i.status} /></td>
+                    <td className="px-5 py-3"><RiskBadge risk={i.customer_risk} /></td>
+                    <td className="px-5 py-3"><button onClick={() => onDelete(i.id)} className="p-2 hover:bg-red-50 rounded-lg" data-testid={`delete-invoice-${i.id}`}><Trash2 className="w-4 h-4 text-red-600" /></button></td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {list.length === 0 ? (
+          <div className="text-center py-12 text-gray-400 text-sm">No invoices match your filters</div>
+        ) : list.map((i) => (
+          <div key={i.id} className="bg-white rounded-xl border border-gray-200 p-4 space-y-3" data-testid={`invoice-card-${i.id}`}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <Link className="font-medium text-gray-900 hover:text-[#0A3B2C] block truncate" to={`/app/invoices/${i.id}`}>{i.invoice_number}</Link>
+                <p className="text-xs text-gray-500 mt-0.5">{i.customer_name}</p>
+              </div>
+              <StatusBadge status={i.status} />
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <div>
+                <p className="text-xs text-gray-500">Due</p>
+                <p className="font-medium">{formatDate(i.due_date)}</p>
+                {i.overdue_days > 0 && <p className="text-xs text-orange-600">{i.overdue_days}d overdue</p>}
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Total</p>
+                <p className="font-medium">{formatINR(i.total_amount)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Pending</p>
+                <p className="font-medium">{formatINR(i.pending_amount)}</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between pt-1">
+              <RiskBadge risk={i.customer_risk} />
+              <button onClick={() => onDelete(i.id)} className="p-2 hover:bg-red-50 rounded-lg" data-testid={`delete-invoice-${i.id}`}><Trash2 className="w-4 h-4 text-red-600" /></button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -104,7 +145,7 @@ function CreateInvoiceDialog({ open, setOpen, customers, onCreated }) {
       <DialogTrigger asChild>
         <Button data-testid="btn-add-invoice" className="bg-[#0A3B2C] hover:bg-[#072A1F] text-white"><Plus className="w-4 h-4 mr-2" /> Add invoice</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>New invoice</DialogTitle>
           <DialogDescription>Add invoice details manually, or upload a PDF/image and let AI auto-fill the fields.</DialogDescription>
@@ -114,8 +155,8 @@ function CreateInvoiceDialog({ open, setOpen, customers, onCreated }) {
           <span className="text-sm font-medium">{ocrLoading ? "Extracting with AI…" : "Upload invoice PDF/image — AI auto-fill"}</span>
           <input type="file" accept="application/pdf,image/png,image/jpeg,image/jpg,image/webp" className="hidden" onChange={onOcrUpload} disabled={ocrLoading} />
         </label>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="sm:col-span-2">
             <Label>Customer</Label>
             <Select value={form.customer_id} onValueChange={(v) => setForm({ ...form, customer_id: v })}>
               <SelectTrigger data-testid="inv-form-customer"><SelectValue placeholder="Select customer" /></SelectTrigger>
@@ -126,8 +167,8 @@ function CreateInvoiceDialog({ open, setOpen, customers, onCreated }) {
           <div><Label>Amount (₹)</Label><Input data-testid="inv-form-amount" type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: +e.target.value })} /></div>
           <div><Label>Tax (₹)</Label><Input type="number" value={form.tax_amount} onChange={(e) => setForm({ ...form, tax_amount: +e.target.value })} /></div>
           <div><Label>Invoice date</Label><Input type="date" value={form.invoice_date} onChange={(e) => setForm({ ...form, invoice_date: e.target.value })} /></div>
-          <div className="col-span-2"><Label>Due date</Label><Input type="date" data-testid="inv-form-due-date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} /></div>
-          <div className="col-span-2"><Label>Description</Label><Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+          <div className="sm:col-span-2"><Label>Due date</Label><Input type="date" data-testid="inv-form-due-date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} /></div>
+          <div className="sm:col-span-2"><Label>Description</Label><Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
         </div>
         <Button data-testid="inv-form-save-btn" onClick={create} className="bg-[#0A3B2C] hover:bg-[#072A1F] text-white">Create invoice</Button>
       </DialogContent>

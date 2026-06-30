@@ -28,20 +28,20 @@ export default function CustomerDetail() {
     <div className="space-y-6">
       <Link to="/app/customers" className="inline-flex items-center text-sm text-gray-500 hover:text-[#0A3B2C]"><ArrowLeft className="w-4 h-4 mr-1" /> Back to customers</Link>
 
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <div className="flex items-start justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="font-display text-3xl font-semibold tracking-tight" data-testid="customer-name">{c.business_name}</h1>
+      <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight" data-testid="customer-name">{c.business_name}</h1>
             <p className="text-gray-500 mt-1">{c.contact_person}</p>
-            <div className="flex flex-wrap gap-4 mt-3 text-sm text-gray-600">
+            <div className="flex flex-wrap gap-3 sm:gap-4 mt-3 text-sm text-gray-600">
               {c.phone && <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" />{c.phone}</span>}
               {c.email && <span className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" />{c.email}</span>}
               {(c.city || c.state) && <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" />{c.city}, {c.state}</span>}
             </div>
           </div>
-          <div className="text-right">
+          <div className="sm:text-right shrink-0">
             <RiskBadge risk={c.risk_category} />
-            <p className="text-3xl font-display font-semibold mt-3">{formatINR(c.total_pending)}</p>
+            <p className="text-2xl sm:text-3xl font-display font-semibold mt-3">{formatINR(c.total_pending)}</p>
             <p className="text-xs text-gray-500">total pending</p>
           </div>
         </div>
@@ -69,7 +69,8 @@ export default function CustomerDetail() {
       <div>
         <h3 className="font-display text-xl font-medium mb-3">Invoices</h3>
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-600"><tr><th className="text-left px-5 py-3 font-medium">Invoice</th><th className="text-left px-5 py-3 font-medium">Due</th><th className="text-left px-5 py-3 font-medium">Amount</th><th className="text-left px-5 py-3 font-medium">Pending</th><th className="text-left px-5 py-3 font-medium">Status</th></tr></thead>
             <tbody>
               {c.invoices.length === 0 ? <tr><td colSpan={5} className="text-center py-8 text-gray-400">No invoices</td></tr> :
@@ -84,10 +85,11 @@ export default function CustomerDetail() {
                 ))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <h3 className="font-display text-xl font-medium mb-3">Payments</h3>
           <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-2">

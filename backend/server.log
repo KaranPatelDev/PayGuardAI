@@ -261,3 +261,4 @@ INFO:     127.0.0.1:10447 - "POST /api/ai/generate-recovery-report HTTP/1.1" 200
 {"timestamp": "2026-06-30T01:56:36.257612+00:00", "level": "INFO", "service": "payguard", "module": "ai_service", "function": "compute_risk_score", "message": "Risk score computed", "event": "ai.risk_score.computed"}
 {"timestamp": "2026-06-30T01:56:36.275158+00:00", "level": "INFO", "service": "payguard", "module": "ai_service", "function": "build_recovery_report", "message": "Recovery report generated", "event": "ai.report.generated"}
 INFO:     127.0.0.1:6838 - "POST /api/ai/generate-recovery-report HTTP/1.1" 200 OK
+INFO:     127.0.0.1:5775 - "POST /api/auth/forgot-password HTTP/1.1" 404 Not Found
