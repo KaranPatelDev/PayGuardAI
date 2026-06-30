@@ -27,6 +27,15 @@ class FollowupConfig:
     business_name: str
     previous_followups: int = 0
     risk_category: str = "Low Risk"
+    paid_amount: float = 0
+    pending_amount: float = 0
+    tax_amount: float = 0
+    invoice_status: str = "Sent"
+    payment_history: list = None
+
+    def __post_init__(self):
+        if self.payment_history is None:
+            self.payment_history = []
 
 
 async def parse_invoice_file(file_bytes: bytes, mime_type: str) -> dict:
@@ -378,7 +387,9 @@ def rule_based_followup(
 
 def rule_based_followup_from_config(cfg: FollowupConfig) -> dict:
     """Rule-based fallback using FollowupConfig dataclass."""
-    amt = _format_inr(cfg.amount)
+    pending = cfg.pending_amount if cfg.pending_amount > 0 else cfg.amount
+    amt = _format_inr(pending)
+    paid = _format_inr(cfg.paid_amount)
     name = cfg.customer_name or "Sir/Madam"
     inv = cfg.invoice_number
     due = cfg.due_date[:10] if cfg.due_date else ""
@@ -386,9 +397,14 @@ def rule_based_followup_from_config(cfg: FollowupConfig) -> dict:
     greet = _greeting(name, cfg.tone)
     body, call = _followup_body_and_call(inv, amt, name, due, cfg.overdue_days)
 
+    if cfg.paid_amount > 0:
+        partial_note = f" You have already paid {paid}. The remaining pending amount is {amt}."
+        body = body.replace(f"of {amt}", f"of {amt}") + partial_note
+        call = call.replace(f"for {amt}", f"for {amt}") + f" The remaining balance is {amt}."
+
     closing = "Regards,\n" + cfg.business_name
     whatsapp = f"{greet}, {body.split('.')[0]}. Kindly confirm the payment timeline. — {cfg.business_name}"
-    email_subject = f"Payment Reminder: Invoice {inv} of {amt}"
+    email_subject = f"Payment Reminder: Invoice {inv} of {amt} (pending)"
     email_body = f"{greet},\n\nI hope you are doing well. {body}\n\n{closing}"
 
     return {
@@ -402,19 +418,50 @@ def rule_based_followup_from_config(cfg: FollowupConfig) -> dict:
 
 
 def _build_followup_prompt(cfg: FollowupConfig, amt: str) -> str:
-    """Build the LLM prompt for follow-up generation."""
-    return (
-        f"Generate a {cfg.tone} {cfg.message_type} for the following Indian business invoice.\n"
-        f"Business (sender): {cfg.business_name}\n"
-        f"Customer (receiver): {cfg.customer_name}\n"
-        f"Invoice Number: {cfg.invoice_number}\n"
-        f"Amount: {amt}\n"
-        f"Due Date: {cfg.due_date[:10]}\n"
-        f"Overdue Days: {cfg.overdue_days} (negative means not yet due)\n"
-        f"Previous follow-ups already sent: {cfg.previous_followups}\n"
-        f"Customer Risk Category: {cfg.risk_category}\n\n"
-        f"Return STRICT JSON only with these 4 keys: whatsapp, email_subject, email_body, call_script."
-    )
+    """Build the LLM prompt for follow-up generation with payment history."""
+    total = _format_inr(cfg.amount)
+    paid = _format_inr(cfg.paid_amount)
+    pending = _format_inr(cfg.pending_amount)
+
+    lines = [
+        f"Generate a {cfg.tone} {cfg.message_type} for the following Indian business invoice.",
+        f"Business (sender): {cfg.business_name}",
+        f"Customer (receiver): {cfg.customer_name}",
+        f"Invoice Number: {cfg.invoice_number}",
+        f"Invoice Status: {cfg.invoice_status}",
+        f"Total Invoice Amount: {total}",
+    ]
+
+    if cfg.tax_amount > 0:
+        lines.append(f"Tax (GST): {_format_inr(cfg.tax_amount)}")
+
+    lines.append(f"Amount Already Paid: {paid}")
+    lines.append(f"Amount Pending: {pending}")
+
+    if cfg.payment_history:
+        lines.append("")
+        lines.append("Payment History (installments received):")
+        for i, p in enumerate(cfg.payment_history, 1):
+            pay_date = p.get("payment_date", "unknown date")[:10]
+            pay_amt = _format_inr(p.get("amount", 0))
+            pay_mode = p.get("payment_mode", "")
+            pay_ref = p.get("reference_number", "")
+            ref_part = f" (Ref: {pay_ref})" if pay_ref else ""
+            lines.append(f"  - Installment {i}: {pay_amt} via {pay_mode} on {pay_date}{ref_part}")
+
+    lines.extend([
+        f"Due Date: {cfg.due_date[:10]}",
+        f"Overdue Days: {cfg.overdue_days} (negative means not yet due)",
+        f"Previous follow-ups already sent: {cfg.previous_followups}",
+        f"Customer Risk Category: {cfg.risk_category}",
+        "",
+        "IMPORTANT: Reference the EXACT pending amount (not total) in all messages. "
+        "If installments have been paid, acknowledge them and mention only the remaining balance.",
+        "",
+        "Return STRICT JSON only with these 4 keys: whatsapp, email_subject, email_body, call_script.",
+    ])
+
+    return "\n".join(lines)
 
 
 def _parse_llm_followup_response(text: str, fallback: dict) -> dict | None:
@@ -447,6 +494,11 @@ async def generate_followup_ai(
     business_name: str,
     previous_followups: int = 0,
     risk_category: str = "Low Risk",
+    paid_amount: float = 0,
+    pending_amount: float = 0,
+    tax_amount: float = 0,
+    invoice_status: str = "Sent",
+    payment_history: list = None,
 ) -> dict:
     """Try LLM first; fall back to rule-based on any failure."""
     cfg = FollowupConfig(
@@ -460,6 +512,11 @@ async def generate_followup_ai(
         business_name=business_name,
         previous_followups=previous_followups,
         risk_category=risk_category,
+        paid_amount=paid_amount,
+        pending_amount=pending_amount,
+        tax_amount=tax_amount,
+        invoice_status=invoice_status,
+        payment_history=payment_history or [],
     )
     return await generate_followup_ai_from_config(cfg)
 
@@ -498,7 +555,9 @@ async def generate_followup_ai_from_config(cfg: FollowupConfig) -> dict:
             "You are an expert payment recovery assistant for Indian businesses (MSMEs, freelancers, agencies). "
             "Generate natural, professional, Indian-business-friendly payment follow-up messages. "
             "Use Indian style words like 'namaste', 'ji', 'kindly', 'as per our records' where the tone allows. "
-            "Always include invoice number, exact amount in INR (₹), and due date. "
+            "Always include invoice number, EXACT PENDING amount in INR (₹), and due date. "
+            "If installments have been paid, acknowledge them and mention only the remaining balance. "
+            "Never reference the total invoice amount if partial payments have been made — use the pending amount. "
             "Always request payment confirmation (UTR/reference). Avoid robotic, overly aggressive, or rude language. "
             "Output STRICT JSON only with keys: whatsapp (short 1-3 lines), email_subject, email_body, call_script. No markdown."
         )

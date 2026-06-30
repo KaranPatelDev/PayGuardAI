@@ -961,6 +961,11 @@ async def ai_generate_followup(payload: AIFollowupRequest, user_id: str = Depend
         )
         prev_count = count_result.scalar() or 0
 
+        payments_result = await session.execute(
+            select(Payment).where(Payment.invoice_id == payload.invoice_id, Payment.user_id == user_id).order_by(Payment.payment_date.asc())
+        )
+        payments = [_row_to_dict(p) for p in payments_result.all()]
+
         ai_result = await generate_followup_ai(
             customer_name=cust_d.get("contact_person") or cust_d.get("business_name") or "Customer",
             invoice_number=inv_d["invoice_number"],
@@ -972,6 +977,11 @@ async def ai_generate_followup(payload: AIFollowupRequest, user_id: str = Depend
             business_name=user_d.get("business_name", "Your Business"),
             previous_followups=prev_count,
             risk_category=cust_d.get("risk_category", "Low Risk"),
+            paid_amount=inv_d.get("paid_amount", 0),
+            pending_amount=inv_d.get("pending_amount", 0),
+            tax_amount=inv_d.get("tax_amount", 0),
+            invoice_status=inv_d.get("status", "Sent"),
+            payment_history=payments,
         )
 
         fu_id = new_id()
