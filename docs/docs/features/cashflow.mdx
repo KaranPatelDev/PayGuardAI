@@ -1,0 +1,66 @@
+---
+title: Cashflow Forecast
+sidebar_position: 6
+description: Risk-weighted cashflow forecasting with probability-based recovery predictions and scenario analysis.
+---
+
+## Overview
+
+Cashflow Forecast provides **risk-weighted predictions** of expected recoveries based on customer risk categories. It calculates expected amounts for this week and month, along with **best case** and **worst case** scenarios.
+
+### Recovery Probability by Risk Category
+
+| Risk Category | Probability | Description |
+|---------------|-------------|-------------|
+| Low Risk | 95% | Customers with good payment history |
+| Medium Risk | 75% | Customers with occasional delays |
+| High Risk | 45% | Customers with significant overdue history |
+| Critical Risk | 20% | Customers with severe payment issues |
+
+### Forecast Metrics
+
+- **Expected This Week** — Probability-weighted recovery amount for the current week
+- **Expected This Month** — Probability-weighted recovery amount for the current month
+- **Best Case Scenario** — All pending invoices recovered at full amounts
+- **Worst Case Scenario** — Only Low and Medium risk customers pay
+
+---
+
+## How It Works
+
+1. The system aggregates all pending invoices by risk category
+2. Each category's pending amount is multiplied by its recovery probability
+3. Weekly and monthly forecasts are calculated based on due dates
+4. Best/worst case scenarios provide range estimates
+
+### Example Calculation
+
+```
+Pending by Risk:
+  Low Risk:     ₹5,00,000 × 95% = ₹4,75,000
+  Medium Risk:  ₹3,00,000 × 75% = ₹2,25,000
+  High Risk:    ₹2,00,000 × 45% = ₹90,000
+  Critical:     ₹1,00,000 × 20% = ₹20,000
+
+Expected Recovery: ₹8,10,000
+```
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/cashflow/forecast` | Returns full cashflow forecast with all metrics |
+
+:::tip
+Use the forecast to prioritize collection efforts on High Risk customers where small improvements in payment behavior can significantly impact recovery.
+:::
+
+:::note
+Forecasts are recalculated in real-time as new invoices and payments are recorded. No manual refresh is needed.
+:::
+
+:::caution
+Recovery probabilities are statistical estimates. Actual recovery rates may vary based on external factors not captured in the model.
+:::

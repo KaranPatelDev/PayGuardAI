@@ -1,0 +1,67 @@
+---
+sidebar_position: 9
+title: Settings
+---
+
+import ApiEndpoint from '@site/src/components/ApiEndpoint';
+
+# Settings
+
+Manage user preferences for payment terms, follow-up tone, reminder schedules, and AI provider.
+
+---
+
+<ApiEndpoint
+  method="GET"
+  path="/api/settings"
+  description="Get the authenticated user's settings. Returns defaults if no settings exist yet."
+  auth={true}
+  response={`{
+  "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "default_payment_terms": 30,
+  "default_followup_tone": "Professional",
+  "default_reminder_days": [-3, 0, 3, 7, 15, 30],
+  "reminder_channels": ["WhatsApp", "Email"],
+  "currency": "INR",
+  "ai_provider": "claude-sonnet-4-6",
+  "updated_at": "2026-06-30T10:00:00+00:00"
+}`}
+  curl={`curl -X GET https://api.payguard.ai/api/settings \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`}
+/>
+
+---
+
+<ApiEndpoint
+  method="PUT"
+  path="/api/settings"
+  description="Update user settings. Only provided fields are changed. Reminder days and channels are stored as JSON arrays."
+  auth={true}
+  body={`{
+  "default_payment_terms": 45,
+  "default_followup_tone": "Firm",
+  "default_reminder_days": [-5, 0, 5, 10, 20, 30],
+  "reminder_channels": ["WhatsApp", "Email", "Phone"],
+  "ai_provider": "claude-sonnet-4-6"
+}`}
+  response={`{
+  "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "default_payment_terms": 45,
+  "default_followup_tone": "Firm",
+  "default_reminder_days": [-5, 0, 5, 10, 20, 30],
+  "reminder_channels": ["WhatsApp", "Email", "Phone"],
+  "currency": "INR",
+  "ai_provider": "claude-sonnet-4-6",
+  "updated_at": "2026-06-30T10:05:00+00:00"
+}`}
+  curl={`curl -X PUT https://api.payguard.ai/api/settings \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "default_payment_terms": 45,
+    "default_followup_tone": "Firm",
+    "default_reminder_days": [-5, 0, 5, 10, 20, 30],
+    "reminder_channels": ["WhatsApp", "Email", "Phone"],
+    "ai_provider": "claude-sonnet-4-6"
+  }'`}
+/>

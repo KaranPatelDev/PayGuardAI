@@ -18,7 +18,7 @@ DEMO_PASSWORD = os.environ.get("DEMO_PASSWORD", "demo123")
 async def seed_demo_data(session: AsyncSession):
     """Idempotent demo seed for Patel Industrial Supplies."""
     logger.info("Seed execution started", extra={"event": "seed.started"})
-    result = await session.execute(select(User).where(User.email == DEMO_EMAIL))
+    result = await session.execute(select(User).limit(1))
     existing = result.scalar_one_or_none()
     if existing:
         logger.info(

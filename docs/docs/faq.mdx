@@ -1,0 +1,197 @@
+---
+title: FAQ
+sidebar_position: 11
+description: Frequently asked questions about PayGuard AI.
+---
+
+# Frequently Asked Questions
+
+---
+
+## General
+
+<details>
+<summary><strong>What is PayGuard AI?</strong></summary>
+
+PayGuard AI is an AI-powered payment recovery platform designed for Indian MSMEs. It helps businesses manage invoices, track payments, and use AI to follow up on overdue payments — improving cash flow and reducing bad debt.
+</details>
+
+<details>
+<summary><strong>Who is PayGuard AI for?</strong></summary>
+
+PayGuard AI is built for:
+- **Small and medium businesses** in India managing accounts receivable
+- **Finance teams** tracking invoices and customer payments
+- **Freelancers and solopreneurs** who need to follow up on unpaid invoices
+- **Manufacturers, traders, and service providers** with B2B payment cycles
+</details>
+
+<details>
+<summary><strong>How much does PayGuard AI cost?</strong></summary>
+
+PayGuard AI offers a free tier (₹0) with basic features, and paid plans starting at ₹799/month. See the [Pricing](./pricing) page for full details and feature comparison.
+</details>
+
+<details>
+<summary><strong>Is there a free trial?</strong></summary>
+
+Yes. All paid plans come with a 14-day free trial. No credit card required to start.
+</details>
+
+---
+
+## Technical
+
+<details>
+<summary><strong>What tech stack does PayGuard AI use?</strong></summary>
+
+- **Frontend:** React 19, Tailwind CSS, shadcn/ui, Recharts, TanStack React Query
+- **Backend:** Python 3.10+, FastAPI, SQLAlchemy (async), Pydantic
+- **Database:** PostgreSQL 15+ (Neon for production)
+- **AI:** Claude Sonnet 4.6 via Emergent API
+- **Auth:** JWT (HS256), bcrypt password hashing
+
+See [Tech Stack](./architecture/tech-stack) for the complete list.
+</details>
+
+<details>
+<summary><strong>What database does PayGuard AI use?</strong></summary>
+
+PayGuard AI uses **PostgreSQL 15+** via the asyncpg driver. In production, we recommend [Neon](https://neon.tech) for serverless PostgreSQL. The schema includes 6 tables: `users`, `settings`, `customers`, `invoices`, `payments`, and `followups`.
+</details>
+
+<details>
+<summary><strong>Is there a REST API?</strong></summary>
+
+Yes. PayGuard AI provides a full REST API built with FastAPI. API documentation is available at `/docs` (Swagger UI) when the backend is running. See the [API Reference](./api/authentication) for details.
+</details>
+
+<details>
+<summary><strong>Can I self-host PayGuard AI?</strong></summary>
+
+Yes. PayGuard AI is open-source and can be self-hosted. Follow the [Local Setup](./getting-started/local-setup) guide to get started. For production self-hosting, see [Production Deployment](./deployment/production).
+</details>
+
+---
+
+## Features
+
+<details>
+<summary><strong>How does the AI follow-up system work?</strong></summary>
+
+PayGuard AI uses Claude Sonnet 4.6 to generate context-aware payment reminder messages. The AI considers:
+- Customer payment history and risk score
+- Invoice details (amount, due date, days overdue)
+- Selected tone (professional, friendly, firm)
+- Language preference (English, Hindi, Gujarati, etc.)
+
+Messages are generated as drafts for review before sending. See [AI Follow-ups](./features/ai-followups) for details.
+</details>
+
+<details>
+<summary><strong>How does OCR invoice parsing work?</strong></summary>
+
+Upload an invoice image or PDF, and the AI extracts structured data including invoice number, date, amount, line items, and customer details. The extracted data is pre-filled in the invoice form for quick review and save.
+</details>
+
+<details>
+<summary><strong>How is the risk score calculated?</strong></summary>
+
+Each customer receives a 0–100 risk score based on:
+- **Payment delays** (40%) — Average days past due
+- **Broken promises** (30%) — Missed payment commitments
+- **Disputed invoices** (20%) — Count and value of disputes
+- **Follow-up history** (10%) — Number of follow-ups required
+
+Scores auto-refresh when invoices, payments, or follow-ups change. See [Risk Scoring](./features/risk-scoring).
+</details>
+
+<details>
+<summary><strong>What languages are supported for AI follow-ups?</strong></summary>
+
+PayGuard AI supports follow-up messages in English, Hindi, Gujarati, Tamil, Telugu, and other Indian languages. The AI adapts the tone and cultural context for each language.
+</details>
+
+<details>
+<summary><strong>Can I export data?</strong></summary>
+
+Yes. You can export invoices, payments, and customer data as CSV or PDF from the respective sections. Recovery reports can be generated and exported as PDF.
+</details>
+
+---
+
+## Deployment
+
+<details>
+<summary><strong>Where is PayGuard AI hosted?</strong></summary>
+
+In production, PayGuard AI uses:
+- **Frontend:** Vercel (edge CDN)
+- **Backend:** Railway (Docker-based hosting)
+- **Database:** Neon (serverless PostgreSQL)
+
+See [Production Deployment](./deployment/production) for setup instructions.
+</details>
+
+<details>
+<summary><strong>Can I use a custom domain?</strong></summary>
+
+Yes. Both Vercel and Railway support custom domains with automatic SSL. See [Custom Domain Setup](./deployment/production#custom-domain-setup) for configuration details.
+</details>
+
+<details>
+<summary><strong>Is SSL/HTTPS enabled?</strong></summary>
+
+Yes. Both Vercel and Railway provide automatic SSL certificates via Let's Encrypt. All production deployments are HTTPS by default.
+</details>
+
+<details>
+<summary><strong>How do I set up Gmail SMTP for password reset emails?</strong></summary>
+
+See the [Gmail SMTP Setup](./deployment/gmail-smtp) guide for step-by-step instructions. You'll need to enable 2-Factor Authentication and generate an App Password on your Google Account.
+</details>
+
+---
+
+## Account
+
+<details>
+<summary><strong>How do I reset my password?</strong></summary>
+
+1. Go to the login page and click **Forgot Password**
+2. Enter your email address
+3. Check your inbox for a reset link (valid for 15 minutes)
+4. Click the link and set a new password
+
+If you don't receive the email, check your spam folder or ensure SMTP is configured correctly.
+</details>
+
+<details>
+<summary><strong>What are the demo credentials?</strong></summary>
+
+| Field | Value |
+|-------|-------|
+| Email | `demo@payguard.ai` |
+| Password | `demo123` |
+
+The demo account comes pre-loaded with sample customers, invoices, and follow-up history. See [Demo Credentials](./getting-started/demo-credentials) for details.
+</details>
+
+<details>
+<summary><strong>Can I delete my account?</strong></summary>
+
+Contact [support@payguard.ai](mailto:support@payguard.ai) to request account deletion. All your data will be permanently removed within 30 days.
+</details>
+
+<details>
+<summary><strong>Is my data secure?</strong></summary>
+
+Yes. PayGuard AI uses:
+- JWT authentication with secure token storage
+- bcrypt password hashing with auto-generated salts
+- HTTPS encryption for all data in transit
+- PostgreSQL with SSL for data at rest
+- Environment-based configuration (no hardcoded secrets)
+
+See [Auth Flow](./architecture/auth-flow) for security details.
+</details>

@@ -1,0 +1,152 @@
+---
+sidebar_position: 1
+title: Authentication
+---
+
+import ApiEndpoint from '@site/src/components/ApiEndpoint';
+
+# Authentication
+
+Register, log in, and manage user accounts. Authentication uses JWT Bearer tokens.
+
+---
+
+<ApiEndpoint
+  method="POST"
+  path="/api/auth/register"
+  description="Register a new user account. Returns a JWT access token and user profile. Default settings are created automatically."
+  auth={false}
+  body={`{
+  "full_name": "Rajesh Kumar",
+  "email": "rajesh@example.com",
+  "phone": "+91-9876543210",
+  "business_name": "Kumar Trading Co.",
+  "business_type": "Wholesale",
+  "gst_number": "27AAACP1234F1Z5",
+  "password": "SecurePass123"
+}`}
+  response={`{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "user": {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "full_name": "Rajesh Kumar",
+    "email": "rajesh@example.com",
+    "phone": "+91-9876543210",
+    "business_name": "Kumar Trading Co.",
+    "business_type": "Wholesale",
+    "gst_number": "27AAACP1234F1Z5",
+    "created_at": "2026-06-30T10:00:00+00:00",
+    "updated_at": "2026-06-30T10:00:00+00:00"
+  }
+}`}
+  curl={`curl -X POST https://api.payguard.ai/api/auth/register \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "full_name": "Rajesh Kumar",
+    "email": "rajesh@example.com",
+    "phone": "+91-9876543210",
+    "business_name": "Kumar Trading Co.",
+    "business_type": "Wholesale",
+    "gst_number": "27AAACP1234F1Z5",
+    "password": "SecurePass123"
+  }'`}
+/>
+
+---
+
+<ApiEndpoint
+  method="POST"
+  path="/api/auth/login"
+  description="Authenticate with email and password. Returns a JWT access token and user profile."
+  auth={false}
+  body={`{
+  "email": "rajesh@example.com",
+  "password": "SecurePass123"
+}`}
+  response={`{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "user": {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "full_name": "Rajesh Kumar",
+    "email": "rajesh@example.com",
+    "phone": "+91-9876543210",
+    "business_name": "Kumar Trading Co.",
+    "business_type": "Wholesale",
+    "gst_number": "27AAACP1234F1Z5",
+    "created_at": "2026-06-30T10:00:00+00:00",
+    "updated_at": "2026-06-30T10:00:00+00:00"
+  }
+}`}
+  curl={`curl -X POST https://api.payguard.ai/api/auth/login \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "email": "rajesh@example.com",
+    "password": "SecurePass123"
+  }'`}
+/>
+
+---
+
+<ApiEndpoint
+  method="GET"
+  path="/api/auth/me"
+  description="Get the currently authenticated user's profile."
+  auth={true}
+  response={`{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "full_name": "Rajesh Kumar",
+  "email": "rajesh@example.com",
+  "phone": "+91-9876543210",
+  "business_name": "Kumar Trading Co.",
+  "business_type": "Wholesale",
+  "gst_number": "27AAACP1234F1Z5",
+  "created_at": "2026-06-30T10:00:00+00:00",
+  "updated_at": "2026-06-30T10:00:00+00:00"
+}`}
+  curl={`curl -X GET https://api.payguard.ai/api/auth/me \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`}
+/>
+
+---
+
+<ApiEndpoint
+  method="POST"
+  path="/api/auth/forgot-password"
+  description="Request a password reset link. Sends an email with a reset token. Rate-limited to one request per 60 seconds per email."
+  auth={false}
+  body={`{
+  "email": "rajesh@example.com"
+}`}
+  response={`{
+  "ok": true
+}`}
+  curl={`curl -X POST https://api.payguard.ai/api/auth/forgot-password \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "email": "rajesh@example.com"
+  }'`}
+/>
+
+---
+
+<ApiEndpoint
+  method="POST"
+  path="/api/auth/reset-password"
+  description="Reset a user's password using a valid reset token. Token expires after a limited time."
+  auth={false}
+  body={`{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "new_password": "NewSecurePass456"
+}`}
+  response={`{
+  "ok": true
+}`}
+  curl={`curl -X POST https://api.payguard.ai/api/auth/reset-password \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "new_password": "NewSecurePass456"
+  }'`}
+/>

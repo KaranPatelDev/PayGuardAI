@@ -1,0 +1,165 @@
+---
+sidebar_position: 5
+title: Follow-ups
+---
+
+import ApiEndpoint from '@site/src/components/ApiEndpoint';
+
+# Follow-ups
+
+Manage payment follow-up communications. Track messages sent via WhatsApp, Email, or Phone with status updates and customer responses.
+
+---
+
+<ApiEndpoint
+  method="GET"
+  path="/api/followups"
+  description="List all follow-ups for the authenticated user, ordered by creation date descending."
+  auth={true}
+  response={`[
+  {
+    "id": "fu-001",
+    "invoice_id": "inv-001",
+    "customer_id": "cust-001",
+    "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "followup_type": "First overdue reminder",
+    "message": "Hi Anil, this is a gentle reminder that invoice INV-2026-001 for \u20b92,95,000 was due on June 1st. Could you please share an update on the payment status?",
+    "email_subject": "",
+    "email_body": "",
+    "call_script": "",
+    "channel": "WhatsApp",
+    "tone": "Professional",
+    "status": "Sent",
+    "promised_payment_date": null,
+    "customer_response": "",
+    "created_at": "2026-06-04T10:00:00+00:00"
+  }
+]`}
+  curl={`curl -X GET https://api.payguard.ai/api/followups \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`}
+/>
+
+---
+
+<ApiEndpoint
+  method="POST"
+  path="/api/followups"
+  description="Create a new follow-up for an invoice. Customer risk is recalculated after creation."
+  auth={true}
+  body={`{
+  "invoice_id": "inv-001",
+  "followup_type": "Strong reminder",
+  "message": "Hi Anil, invoice INV-2026-001 for \u20b92,95,000 is now 7 days overdue. We need confirmation of payment by end of this week to avoid further escalation.",
+  "channel": "WhatsApp",
+  "tone": "Firm",
+  "status": "Drafted"
+}`}
+  response={`{
+  "id": "fu-002",
+  "invoice_id": "inv-001",
+  "customer_id": "cust-001",
+  "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "followup_type": "Strong reminder",
+  "message": "Hi Anil, invoice INV-2026-001 for \u20b92,95,000 is now 7 days overdue. We need confirmation of payment by end of this week to avoid further escalation.",
+  "email_subject": "",
+  "email_body": "",
+  "call_script": "",
+  "channel": "WhatsApp",
+  "tone": "Firm",
+  "status": "Drafted",
+  "promised_payment_date": null,
+  "customer_response": "",
+  "created_at": "2026-06-08T10:00:00+00:00"
+}`}
+  curl={`curl -X POST https://api.payguard.ai/api/followups \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "invoice_id": "inv-001",
+    "followup_type": "Strong reminder",
+    "message": "Hi Anil, invoice INV-2026-001 for \\u20b92,95,000 is now 7 days overdue. We need confirmation of payment by end of this week to avoid further escalation.",
+    "channel": "WhatsApp",
+    "tone": "Firm",
+    "status": "Drafted"
+  }'`}
+/>
+
+---
+
+<ApiEndpoint
+  method="GET"
+  path="/api/followups/invoice/{iid}"
+  description="List all follow-ups for a specific invoice, ordered by creation date descending."
+  auth={true}
+  response={`[
+  {
+    "id": "fu-001",
+    "invoice_id": "inv-001",
+    "customer_id": "cust-001",
+    "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "followup_type": "First overdue reminder",
+    "message": "Hi Anil, this is a gentle reminder that invoice INV-2026-001 for \u20b92,95,000 was due on June 1st.",
+    "channel": "WhatsApp",
+    "tone": "Professional",
+    "status": "Sent",
+    "promised_payment_date": null,
+    "customer_response": "",
+    "created_at": "2026-06-04T10:00:00+00:00"
+  },
+  {
+    "id": "fu-002",
+    "invoice_id": "inv-001",
+    "customer_id": "cust-001",
+    "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "followup_type": "Strong reminder",
+    "message": "Hi Anil, invoice INV-2026-001 for \u20b92,95,000 is now 7 days overdue.",
+    "channel": "WhatsApp",
+    "tone": "Firm",
+    "status": "Sent",
+    "promised_payment_date": "2026-06-15",
+    "customer_response": "Will pay by 15th",
+    "created_at": "2026-06-08T10:00:00+00:00"
+  }
+]`}
+  curl={`curl -X GET https://api.payguard.ai/api/followups/invoice/inv-001 \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`}
+/>
+
+---
+
+<ApiEndpoint
+  method="PUT"
+  path="/api/followups/{fid}"
+  description="Update a follow-up's status, customer response, or promised payment date. Customer risk is recalculated after update."
+  auth={true}
+  body={`{
+  "status": "Promise Received",
+  "promised_payment_date": "2026-07-10",
+  "customer_response": "Confirmed payment via NEFT by July 10th"
+}`}
+  response={`{
+  "id": "fu-002",
+  "invoice_id": "inv-001",
+  "customer_id": "cust-001",
+  "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "followup_type": "Strong reminder",
+  "message": "Hi Anil, invoice INV-2026-001 for \u20b92,95,000 is now 7 days overdue.",
+  "email_subject": "",
+  "email_body": "",
+  "call_script": "",
+  "channel": "WhatsApp",
+  "tone": "Firm",
+  "status": "Promise Received",
+  "promised_payment_date": "2026-07-10",
+  "customer_response": "Confirmed payment via NEFT by July 10th",
+  "created_at": "2026-06-08T10:00:00+00:00"
+}`}
+  curl={`curl -X PUT https://api.payguard.ai/api/followups/fu-002 \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "status": "Promise Received",
+    "promised_payment_date": "2026-07-10",
+    "customer_response": "Confirmed payment via NEFT by July 10th"
+  }'`}
+/>

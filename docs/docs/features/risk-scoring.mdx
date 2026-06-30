@@ -1,0 +1,65 @@
+---
+title: Customer Risk Scoring
+sidebar_position: 7
+description: Automated risk assessment based on payment behavior, broken promises, and dispute history with AI-generated summaries.
+---
+
+## Overview
+
+Customer Risk Scoring assigns a **0-100 risk score** to each customer based on their payment behavior. The score auto-refreshes when invoices, payments, or follow-ups change. AI generates plain-language risk summaries for quick assessment.
+
+### Risk Calculation Factors
+
+| Factor | Weight | Description |
+|--------|--------|-------------|
+| Payment Delays | 40% | Average days past due across all invoices |
+| Broken Promises | 30% | Number of missed payment commitments |
+| Disputed Invoices | 20% | Count and value of disputed invoices |
+| Follow-up History | 10% | Number of follow-ups required |
+
+### Risk Categories
+
+| Category | Score Range | Action |
+|----------|-------------|--------|
+| Low Risk | 0 - 25 | Standard follow-up, maintain relationship |
+| Medium Risk | 26 - 50 | Increased monitoring, regular reminders |
+| High Risk | 51 - 75 | Escalated follow-ups, consider credit limits |
+| Critical Risk | 76 - 100 | Immediate action, legal consultation recommended |
+
+### Auto-Refresh Triggers
+
+- New invoice created
+- Payment recorded
+- Follow-up sent or completed
+- Invoice status changed
+- Dispute raised or resolved
+
+---
+
+## How It Works
+
+1. Risk score is calculated on first invoice creation
+2. Each event (payment, follow-up, dispute) triggers a recalculation
+3. The score updates in real-time across all views
+4. AI generates a human-readable risk summary on demand
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/customers/{cid}/risk` | Get detailed risk assessment for a customer |
+| POST | `/api/ai/generate-risk-summary` | Generate AI-powered risk summary |
+
+:::tip
+Review High and Critical risk customers weekly. Early intervention significantly improves recovery rates.
+:::
+
+:::note
+Risk scores are normalized across all customers. Adding new customers may shift existing scores slightly.
+:::
+
+:::caution
+Do not rely solely on risk scores for credit decisions. Use them as one input alongside manual review and business judgment.
+:::

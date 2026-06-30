@@ -1,0 +1,144 @@
+---
+title: Gmail SMTP Setup
+sidebar_position: 3
+description: Set up Gmail SMTP for sending password reset emails from PayGuard AI.
+---
+
+# Gmail SMTP Setup
+
+PayGuard AI uses Gmail SMTP to send password reset emails. This guide walks you through the setup.
+
+---
+
+## Why Gmail SMTP?
+
+- **Free** — no cost for low-volume transactional email
+- **Simple** — no account creation on a separate service
+- **Reliable** — Google's infrastructure handles delivery
+
+:::caution
+Gmail SMTP is suitable for development and low-volume production. For high-volume or mission-critical email, consider a dedicated service (see [Production Alternatives](#production-alternatives)).
+:::
+
+---
+
+## Step 1: Enable 2-Factor Authentication
+
+Gmail App Passwords require 2-Factor Authentication to be enabled on your Google Account.
+
+1. Go to [myaccount.google.com](https://myaccount.google.com)
+2. Navigate to **Security**
+3. Under "How you sign in to Google", enable **2-Step Verification**
+4. Follow the prompts to complete setup
+
+---
+
+## Step 2: Generate an App Password
+
+1. Go to [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
+2. You may need to sign in again
+3. Under "App name", enter a descriptive name (e.g., `PayGuard AI`)
+4. Click **Create**
+5. Google will display a **16-character password** (e.g., `abcd efgh ijkl mnop`)
+6. **Copy this password immediately** — it won't be shown again
+
+:::tip
+Remove spaces from the password before using it in your `.env` file: `abcdefghijklmnop`
+:::
+
+---
+
+## Step 3: Configure Environment Variables
+
+Add these variables to your backend `.env` file:
+
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=abcdefghijklmnop
+```
+
+### Variables Explained
+
+| Variable | Value | Description |
+|----------|-------|-------------|
+| `SMTP_HOST` | `smtp.gmail.com` | Gmail's SMTP server |
+| `SMTP_PORT` | `587` | TLS port (recommended) |
+| `SMTP_USER` | `you@gmail.com` | Your Gmail address |
+| `SMTP_PASS` | `abcdefghijklmnop` | The 16-character app password |
+
+---
+
+## Testing the Setup
+
+Restart the backend and test with the forgot-password endpoint:
+
+```bash
+curl -X POST http://localhost:8000/api/auth/forgot-password \
+  -H "Content-Type: application/json" \
+  -d '{"email": "demo@payguard.ai"}'
+```
+
+Check the backend logs for email sending status:
+
+```bash
+tail -f logs/app.log | grep -i email
+```
+
+You should see a log entry confirming the email was sent successfully.
+
+---
+
+## Troubleshooting
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| `Authentication failed` | Wrong password | Ensure you're using the App Password, not your Google password |
+| `Username and Password not accepted` | 2FA not enabled | Enable 2-Step Verification first |
+| `Connection refused` | Wrong host/port | Use `smtp.gmail.com` and port `587` |
+| `SMTPAuthenticationError` | App Password expired | Generate a new App Password |
+| Emails going to spam | Reputation issue | Use a dedicated domain with SPF/DKIM |
+
+### Common Fixes
+
+**"Authentication failed" error:**
+
+- Verify 2-Factor Authentication is enabled on your Google Account
+- Ensure you're using the App Password (not your regular password)
+- Check for typos — App Passwords are 16 characters with no spaces
+
+**"Connection timed out" error:**
+
+- Confirm port `587` is not blocked by your firewall
+- Try port `465` (SSL) as an alternative:
+
+```env
+SMTP_PORT=465
+```
+
+---
+
+## Production Alternatives
+
+For high-volume or mission-critical email, consider these alternatives:
+
+| Service | Free Tier | Pricing | Best For |
+|---------|-----------|---------|----------|
+| [SendGrid](https://sendgrid.com) | 100 emails/day | $19.95/mo for 50k | Growing startups |
+| [Resend](https://resend.com) | 100 emails/day | $20/mo for 50k | Developer-friendly |
+| [AWS SES](https://aws.amazon.com/ses/) | 62,000 emails/month | $0.10/1000 | High volume |
+| [Mailgun](https://mailgun.com) | 1,000 emails/month | $35/mo for 50k | Enterprise |
+
+:::tip
+For Indian MSMEs with low email volumes (password resets only), Gmail SMTP is perfectly sufficient.
+:::
+
+### Switching to SendGrid Example
+
+```env
+SMTP_HOST=smtp.sendgrid.net
+SMTP_PORT=587
+SMTP_USER=apikey
+SMTP_PASS=SG.xxxxxxxxxxxxxxxxxxxx
+```

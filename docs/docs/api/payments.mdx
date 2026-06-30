@@ -1,0 +1,114 @@
+---
+sidebar_position: 4
+title: Payments
+---
+
+import ApiEndpoint from '@site/src/components/ApiEndpoint';
+
+# Payments
+
+Record and track payments against invoices. Payment recording automatically updates invoice status and recalculates customer risk.
+
+---
+
+<ApiEndpoint
+  method="GET"
+  path="/api/payments"
+  description="List all payments for the authenticated user, ordered by payment date descending. Includes resolved invoice numbers and customer names."
+  auth={true}
+  response={`[
+  {
+    "id": "pay-001",
+    "invoice_id": "inv-001",
+    "customer_id": "cust-001",
+    "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "amount": 150000,
+    "payment_date": "2026-06-10",
+    "payment_mode": "UPI",
+    "reference_number": "UPI-TXN-987654",
+    "notes": "Partial payment for INV-2026-001",
+    "invoice_number": "INV-2026-001",
+    "customer_name": "Sharma Industries",
+    "created_at": "2026-06-10T14:30:00+00:00"
+  }
+]`}
+  curl={`curl -X GET https://api.payguard.ai/api/payments \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`}
+/>
+
+---
+
+<ApiEndpoint
+  method="POST"
+  path="/api/payments"
+  description="Record a payment against an invoice. Updates the invoice's paid_amount, pending_amount, and status. Customer risk is recalculated after recording."
+  auth={true}
+  body={`{
+  "invoice_id": "inv-001",
+  "amount": 150000,
+  "payment_date": "2026-06-10",
+  "payment_mode": "UPI",
+  "reference_number": "UPI-TXN-987654",
+  "notes": "Partial payment for INV-2026-001"
+}`}
+  response={`{
+  "id": "pay-001",
+  "invoice_id": "inv-001",
+  "customer_id": "cust-001",
+  "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "amount": 150000,
+  "payment_date": "2026-06-10",
+  "payment_mode": "UPI",
+  "reference_number": "UPI-TXN-987654",
+  "notes": "Partial payment for INV-2026-001",
+  "created_at": "2026-06-10T14:30:00+00:00"
+}`}
+  curl={`curl -X POST https://api.payguard.ai/api/payments \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "invoice_id": "inv-001",
+    "amount": 150000,
+    "payment_date": "2026-06-10",
+    "payment_mode": "UPI",
+    "reference_number": "UPI-TXN-987654",
+    "notes": "Partial payment for INV-2026-001"
+  }'`}
+/>
+
+---
+
+<ApiEndpoint
+  method="GET"
+  path="/api/payments/invoice/{iid}"
+  description="List all payments for a specific invoice, ordered by payment date descending."
+  auth={true}
+  response={`[
+  {
+    "id": "pay-001",
+    "invoice_id": "inv-001",
+    "customer_id": "cust-001",
+    "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "amount": 150000,
+    "payment_date": "2026-06-10",
+    "payment_mode": "UPI",
+    "reference_number": "UPI-TXN-987654",
+    "notes": "Partial payment for INV-2026-001",
+    "created_at": "2026-06-10T14:30:00+00:00"
+  },
+  {
+    "id": "pay-002",
+    "invoice_id": "inv-001",
+    "customer_id": "cust-001",
+    "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "amount": 145000,
+    "payment_date": "2026-06-25",
+    "payment_mode": "Bank Transfer",
+    "reference_number": "NEFT-20260625-001",
+    "notes": "Final payment for INV-2026-001",
+    "created_at": "2026-06-25T09:15:00+00:00"
+  }
+]`}
+  curl={`curl -X GET https://api.payguard.ai/api/payments/invoice/inv-001 \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`}
+/>

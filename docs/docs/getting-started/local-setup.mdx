@@ -1,0 +1,235 @@
+---
+title: Local Setup
+sidebar_position: 2
+description: Set up the PayGuard AI development environment on your local machine.
+---
+
+# Local Development Setup
+
+This guide walks you through setting up the PayGuard AI project locally for development and testing.
+
+---
+
+## Prerequisites
+
+Make sure you have the following installed:
+
+| Tool         | Version | Check Command         |
+|-------------|---------|----------------------|
+| Python      | 3.10+   | `python --version`   |
+| Node.js     | 20+     | `node --version`     |
+| PostgreSQL  | 14+     | `psql --version`     |
+| Git         | Latest  | `git --version`      |
+
+:::tip
+We recommend using [pyenv](https://github.com/pyenv/pyenv) for Python and [nvm](https://github.com/nvm-sh/nvm) for Node.js to manage versions.
+:::
+
+---
+
+## 1. Clone the Repository
+
+```bash
+git clone https://github.com/your-org/payguard-ai.git
+cd payguard-ai
+```
+
+---
+
+## 2. Backend Setup
+
+### Create a virtual environment
+
+```bash
+cd backend
+python -m venv venv
+```
+
+Activate it:
+
+```bash
+# Windows
+venv\Scripts\activate
+
+# macOS/Linux
+source venv/bin/activate
+```
+
+### Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### Configure environment variables
+
+Create a `.env` file in the `backend/` directory:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your settings:
+
+```env
+DATABASE_URL=postgresql://postgres:password@localhost:5432/payguard
+SECRET_KEY=your-secret-key-here
+OPENAI_API_KEY=sk-your-openai-key
+RAZORPAY_KEY_ID=rzp_test_abc123
+RAZORPAY_KEY_SECRET=your-razorpay-secret
+ALLOWED_ORIGINS=http://localhost:3000
+```
+
+:::caution
+Never commit `.env` files to version control. The `.gitignore` is already configured to exclude them.
+:::
+
+### Start the backend server
+
+```bash
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+The API will be available at `http://localhost:8000`. Docs at `http://localhost:8000/docs`.
+
+---
+
+## 3. Frontend Setup
+
+Open a new terminal:
+
+```bash
+cd frontend
+```
+
+### Install dependencies
+
+```bash
+npm install
+```
+
+### Configure environment variables
+
+Create a `.env` file in the `frontend/` directory:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+
+```env
+REACT_APP_API_URL=http://localhost:8000/api/v1
+REACT_APP_RAZORPAY_KEY_ID=rzp_test_abc123
+```
+
+### Start the frontend dev server
+
+```bash
+npm start
+```
+
+The app will be available at `http://localhost:3000`.
+
+---
+
+## 4. Database Setup
+
+### Create the database
+
+```bash
+psql -U postgres -c "CREATE DATABASE payguard;"
+```
+
+### Run migrations
+
+```bash
+cd backend
+alembic upgrade head
+```
+
+### Seed sample data
+
+```bash
+python scripts/seed_data.py
+```
+
+:::note
+This creates a demo account (`demo@payguard.ai` / `demo123`) with sample customers, invoices, and follow-up history.
+:::
+
+---
+
+## 5. Verify the Setup
+
+Run the health check:
+
+```bash
+curl http://localhost:8000/health
+```
+
+Expected response:
+
+```json
+{
+  "status": "healthy",
+  "version": "1.0.0",
+  "database": "connected"
+}
+```
+
+---
+
+## Project Structure
+
+```
+payguard-ai/
+├── backend/
+│   ├── main.py              # FastAPI application entry
+│   ├── models/              # SQLAlchemy models
+│   ├── routers/             # API route handlers
+│   ├── services/            # Business logic
+│   ├── ai/                  # AI follow-up generation
+│   ├── scripts/             # Seed & utility scripts
+│   └── alembic/             # Database migrations
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # React components
+│   │   ├── pages/           # Page views
+│   │   ├── hooks/           # Custom React hooks
+│   │   └── services/        # API client
+│   └── package.json
+├── docs/                    # Docusaurus documentation
+└── docker-compose.yml
+```
+
+---
+
+## Running with Docker
+
+Alternatively, use Docker Compose to run everything:
+
+```bash
+docker-compose up -d
+```
+
+This starts the backend, frontend, and PostgreSQL in containers.
+
+---
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Port 8000 already in use | Use `uvicorn main:app --port 8001` or kill the process |
+| Database connection refused | Ensure PostgreSQL is running: `pg_isready` |
+| Migration errors | Reset DB: `alembic downgrade base && alembic upgrade head` |
+| Frontend blank screen | Check `.env` has correct `REACT_APP_API_URL` |
+
+:::tip
+Check the backend logs with `tail -f backend/logs/app.log` for detailed error information.
+:::
+
+---
+
+Ready to contribute? See the **[Deployment Guide](../deployment/production)** for production setup details.

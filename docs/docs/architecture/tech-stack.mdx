@@ -1,0 +1,151 @@
+---
+title: Tech Stack
+sidebar_position: 2
+description: Complete technology stack powering PayGuard AI — frontend, backend, database, auth, AI, email, logging, and deployment.
+---
+
+# Tech Stack
+
+PayGuard AI is built with a curated set of modern, production-grade technologies.
+
+---
+
+## Frontend
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **React** | 19.0 | UI framework (SPA) |
+| **React Router DOM** | 7.15 | Client-side routing |
+| **Tailwind CSS** | 3.4 | Utility-first styling |
+| **shadcn/ui** | — | Pre-built UI components (Radix UI primitives) |
+| **Recharts** | 3.6 | Dashboard charts and data visualization |
+| **lucide-react** | 0.516 | Icon library |
+| **TanStack React Query** | 5.56 | Server state management and caching |
+| **Axios** | 1.16 | HTTP client |
+| **React Hook Form** | 7.56 | Form state management |
+| **Zod** | 3.24 | Schema validation |
+| **Framer Motion** | 11.18 | Animations |
+| **date-fns / dayjs** | 4.1 / 1.11 | Date utilities |
+| **sonner** | 2.0 | Toast notifications |
+| **CRACO** | 7.1 | CRA config override (no eject) |
+
+### UI Component Primitives (Radix)
+
+All shadcn/ui components are backed by Radix UI primitives:
+
+- `@radix-ui/react-dialog`, `react-dropdown-menu`, `react-popover`
+- `@radix-ui/react-tabs`, `react-accordion`, `react-collapsible`
+- `@radix-ui/react-select`, `react-checkbox`, `react-switch`
+- `@radix-ui/react-toast`, `react-tooltip`, `react-label`
+- `@radix-ui/react-avatar`, `react-separator`, `react-scroll-area`
+- And more — see `frontend/package.json` for the full list.
+
+---
+
+## Backend
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **Python** | 3.10+ | Runtime |
+| **FastAPI** | 0.110 | Async web framework |
+| **Uvicorn** | — | ASGI server |
+| **SQLAlchemy** | 2.0 | Async ORM |
+| **asyncpg** | — | PostgreSQL async driver |
+| **Pydantic** | 2.x | Data validation and serialization |
+| **PyJWT** | — | JWT token creation and verification |
+| **bcrypt** | — | Password hashing |
+| **aiosmtplib** | — | Async email sending |
+| **python-dotenv** | — | Environment variable loading |
+
+---
+
+## Database
+
+| Technology | Detail |
+|------------|--------|
+| **Engine** | PostgreSQL 15+ |
+| **Provider** | Neon (serverless, branchable) |
+| **Driver** | asyncpg (via SQLAlchemy async) |
+| **Schema** | 6 tables: `users`, `settings`, `customers`, `invoices`, `payments`, `followups` |
+| **IDs** | UUID v4 |
+| **Timestamps** | ISO 8601 UTC |
+
+---
+
+## Authentication & Security
+
+| Technology | Purpose |
+|------------|---------|
+| **PyJWT** | JWT access token and reset token creation/verification |
+| **bcrypt** | Password hashing with auto-generated salts |
+| **HS256** | HMAC-SHA256 token signing algorithm |
+| **CORS Middleware** | Cross-origin request control (Starlette) |
+
+### Token Configuration
+
+| Parameter | Default | Env Var |
+|-----------|---------|---------|
+| Algorithm | HS256 | `JWT_ALGORITHM` |
+| Access token TTL | 10080 min (7 days) | `JWT_EXPIRE_MINUTES` |
+| Reset token TTL | 15 min | Hardcoded |
+| Secret key | — | `JWT_SECRET` (required) |
+
+---
+
+## AI / LLM
+
+| Technology | Purpose |
+|------------|---------|
+| **Claude Sonnet 4.6** | Primary LLM for follow-up generation, risk scoring, recovery reports |
+| **Emergent LLM Key** | Unified API key for Claude access |
+| **Rule-based fallback** | Deterministic template engine when AI is unavailable |
+
+### AI Capabilities
+
+| Feature | Description |
+|---------|-------------|
+| Follow-up generation | Context-aware payment reminder messages |
+| Risk scoring | Customer credit risk assessment (0–100) |
+| Recovery reports | AR aging analysis and collection strategy |
+| Invoice parsing | OCR-like structured data extraction from uploaded files |
+
+---
+
+## Email
+
+| Technology | Purpose |
+|------------|---------|
+| **Gmail SMTP** | Transactional email delivery |
+| **aiosmtplib** | Async SMTP client |
+| **Use case** | Password reset links only |
+
+---
+
+## Logging
+
+| Technology | Purpose |
+|------------|---------|
+| **Structured JSON** | Machine-parseable log events |
+| **Rotating file handler** | Log rotation to prevent disk exhaustion |
+| **Per-module loggers** | `payguard.server`, `payguard.auth`, etc. |
+
+---
+
+## Deployment
+
+| Component | Platform | Notes |
+|-----------|----------|-------|
+| **Frontend** | Vercel | Static hosting, edge CDN, automatic deploys |
+| **Backend** | Railway | Docker-based Python hosting, env var management |
+| **Database** | Neon | Serverless PostgreSQL, branch-based workflows |
+| **AI API** | Emergent | Claude Sonnet 4.6 access via unified key |
+| **Email** | Gmail SMTP | Free tier for transactional email |
+
+### Build & Development
+
+| Command | Location | Purpose |
+|---------|----------|---------|
+| `yarn start` | `frontend/` | Start React dev server (via CRACO) |
+| `yarn build` | `frontend/` | Production build |
+| `uvicorn server:app` | `backend/` | Start FastAPI server |
+| `python seed.py` | `backend/` | Seed demo data |

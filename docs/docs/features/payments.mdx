@@ -1,0 +1,60 @@
+---
+title: Payment Recording
+sidebar_position: 4
+description: Record and track payments against invoices with automatic status updates and full payment history.
+---
+
+## Overview
+
+Payment Recording allows you to log payments against specific invoices. The system **auto-updates** the invoice's `paid_amount`, `pending_amount`, and `status` whenever a payment is recorded. Supports multiple Indian payment modes.
+
+### Supported Payment Modes
+
+| Mode | Description |
+|------|-------------|
+| UPI | Unified Payments Interface transfers |
+| NEFT | National Electronic Funds Transfer |
+| RTGS | Real-Time Gross Settlement |
+| Cash | Physical cash payments |
+| Cheque | Cheque-based payments |
+
+### Auto-Update Logic
+
+When a payment is recorded:
+
+1. `paid_amount` increases by the payment value
+2. `pending_amount` decreases by the payment value
+3. If `paid_amount` equals the total amount → status changes to **Paid**
+4. If `paid_amount` is greater than 0 but less than total → status changes to **Partially Paid**
+5. If `paid_amount` is 0 and past due date → status remains **Overdue**
+
+---
+
+## How It Works
+
+1. Select an invoice to record a payment against
+2. Enter the payment amount, mode, date, and reference number
+3. The system updates the invoice automatically
+4. Payment history is available on the invoice detail view
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/payments` | List all payments with optional filters |
+| POST | `/api/payments` | Record a new payment |
+| GET | `/api/payments/invoice/{iid}` | Get all payments for a specific invoice |
+
+:::tip
+Always include a reference number (UPI transaction ID, NEFT reference, cheque number) for audit trail purposes.
+:::
+
+:::note
+Partial payments are fully supported. You can record multiple payments against a single invoice until the full amount is covered.
+:::
+
+:::caution
+Payment amounts cannot exceed the remaining pending amount on an invoice. The system will reject overpayments.
+:::

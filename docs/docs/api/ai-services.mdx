@@ -1,0 +1,123 @@
+---
+sidebar_position: 6
+title: AI Services
+---
+
+import ApiEndpoint from '@site/src/components/ApiEndpoint';
+
+# AI Services
+
+AI-powered features for invoice OCR, follow-up generation, risk assessment, and recovery reporting.
+
+---
+
+<ApiEndpoint
+  method="POST"
+  path="/api/ai/parse-invoice"
+  description="Extract invoice data from a PDF or image file using OCR. Accepts PDF, PNG, JPG, and WebP formats up to 10MB. Automatically matches against existing customers by business name."
+  auth={true}
+  body={`(multipart/form-data — file upload)
+
+Form fields:
+  file: <binary — PDF, PNG, JPG, or WebP>`}
+  response={`{
+  "invoice_number": "INV-2026-042",
+  "customer_business_name": "Sharma Industries",
+  "amount": 345000,
+  "tax_amount": 62100,
+  "due_date": "2026-07-30",
+  "invoice_date": "2026-06-30",
+  "matched_customer_id": "cust-001"
+}`}
+  curl={`curl -X POST https://api.payguard.ai/api/ai/parse-invoice \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \\
+  -F "file=@/path/to/invoice.pdf"`}
+/>
+
+---
+
+<ApiEndpoint
+  method="POST"
+  path="/api/ai/generate-followup"
+  description="Generate an AI-powered follow-up message for an invoice. Customize tone (Professional, Firm, Urgent, Friendly) and message type. Uses customer risk category and payment history for context."
+  auth={true}
+  body={`{
+  "invoice_id": "inv-001",
+  "tone": "Firm",
+  "message_type": "Strong reminder"
+}`}
+  response={`{
+  "message": "Dear Anil, I hope this message finds you well. I'm writing to follow up on invoice INV-2026-001 for \u20b92,95,000, which was due on June 1st, 2026. As this payment is now 29 days overdue, we kindly request an immediate update on the expected payment date. Please note that continued delays may affect your credit terms with Kumar Trading Co.",
+  "subject": "Payment Overdue: INV-2026-001 — Action Required",
+  "call_script": "Hi Anil, this is Rajesh from Kumar Trading Co. I'm calling regarding invoice INV-2026-001 for \u20b92,95,000 which is now 29 days past due. Can you confirm when we can expect the payment?",
+  "_source": "ai",
+  "_model": "claude-sonnet-4-6"
+}`}
+  curl={`curl -X POST https://api.payguard.ai/api/ai/generate-followup \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "invoice_id": "inv-001",
+    "tone": "Firm",
+    "message_type": "Strong reminder"
+  }'`}
+/>
+
+---
+
+<ApiEndpoint
+  method="POST"
+  path="/api/ai/generate-risk-summary"
+  description="Generate an AI risk assessment for a customer. Recalculates the risk score based on overdue invoices, broken promises, ignored follow-ups, and disputed invoices."
+  auth={true}
+  body={`{
+  "customer_id": "cust-001"
+}`}
+  response={`{
+  "customer": "Sharma Industries",
+  "risk_score": 72,
+  "risk_category": "High Risk",
+  "risk_reason": "3 overdue invoices totaling \u20b9475,000. 2 broken payment promises in the last 30 days. 1 ignored follow-up. Credit utilization at 63% of \u20b95,00,000 limit.",
+  "risk_action": "Reduce credit limit to \u20b9200,000. Require 50% advance for new orders. Escalate to formal demand letter if no payment within 7 days.",
+  "broken_promises": 2,
+  "total_pending": 475000
+}`}
+  curl={`curl -X POST https://api.payguard.ai/api/ai/generate-risk-summary \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "customer_id": "cust-001"
+  }'`}
+/>
+
+---
+
+<ApiEndpoint
+  method="POST"
+  path="/api/ai/generate-recovery-report"
+  description="Generate a comprehensive AI recovery report for a customer or specific invoice. Includes risk analysis, payment history, and actionable recovery recommendations."
+  auth={true}
+  body={`{
+  "customer_id": "cust-001"
+}`}
+  response={`{
+  "report": "## Recovery Report: Sharma Industries\\n\\n### Summary\\n- **Total Pending:** \u20b94,75,000 across 3 invoices\\n- **Risk Level:** High Risk (Score: 72/100)\\n- **Overdue Days (avg):** 22 days\\n- **Broken Promises:** 2\\n\\n### Recommendations\\n1. Issue formal demand letter for INV-2026-001 (\u20b92,95,000)\\n2. Reduce credit limit from \u20b95,00,000 to \u20b92,00,000\\n3. Require 50% advance payment for all new orders\\n4. Schedule follow-up call within 48 hours\\n5. If no response, escalate to legal counsel\\n\\n### Payment History\\n- Last payment: \u20b91,50,000 on 2026-06-10 (partial)\\n- Average delay: 22 days\\n- Payment reliability: 40%",
+  "total_pending": 475000,
+  "risk": {
+    "risk_score": 72,
+    "risk_category": "High Risk",
+    "broken_promises": 2
+  },
+  "customer": {
+    "id": "cust-001",
+    "business_name": "Sharma Industries",
+    "credit_limit": 500000
+  }
+}`}
+  curl={`curl -X POST https://api.payguard.ai/api/ai/generate-recovery-report \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "customer_id": "cust-001"
+  }'`}
+/>

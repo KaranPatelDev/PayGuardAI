@@ -1,0 +1,240 @@
+---
+sidebar_position: 2
+title: Customers
+---
+
+import ApiEndpoint from '@site/src/components/ApiEndpoint';
+
+# Customers
+
+Manage customer records, search by name, filter by risk level, and view nested invoices/payments/follow-ups.
+
+---
+
+<ApiEndpoint
+  method="GET"
+  path="/api/customers"
+  description="List all customers for the authenticated user. Supports optional search by business name and risk category filter."
+  auth={true}
+  response={`[
+  {
+    "id": "cust-001",
+    "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "business_name": "Sharma Industries",
+    "contact_person": "Anil Sharma",
+    "email": "anil@sharma.in",
+    "phone": "+91-9812345678",
+    "address": "123 MG Road, Sector 5",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "gst_number": "27AABCS1234C1Z5",
+    "payment_terms": 30,
+    "credit_limit": 500000,
+    "notes": "Long-standing client",
+    "risk_score": 72,
+    "risk_category": "High Risk",
+    "risk_reason": "Multiple overdue invoices with broken payment promises.",
+    "risk_action": "Reduce credit limit and require upfront payment for new orders.",
+    "total_invoiced": 1250000,
+    "total_pending": 475000,
+    "invoice_count": 5,
+    "created_at": "2026-01-15T08:30:00+00:00",
+    "updated_at": "2026-06-28T14:20:00+00:00"
+  }
+]`}
+  curl={`curl -X GET "https://api.payguard.ai/api/customers?search=Sharma&risk=High%20Risk" \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`}
+/>
+
+---
+
+<ApiEndpoint
+  method="POST"
+  path="/api/customers"
+  description="Create a new customer record. Risk is initialized to Low Risk with default values."
+  auth={true}
+  body={`{
+  "business_name": "Sharma Industries",
+  "contact_person": "Anil Sharma",
+  "email": "anil@sharma.in",
+  "phone": "+91-9812345678",
+  "address": "123 MG Road, Sector 5",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "gst_number": "27AABCS1234C1Z5",
+  "payment_terms": 30,
+  "credit_limit": 500000,
+  "notes": "Long-standing client"
+}`}
+  response={`{
+  "id": "cust-001",
+  "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "business_name": "Sharma Industries",
+  "contact_person": "Anil Sharma",
+  "email": "anil@sharma.in",
+  "phone": "+91-9812345678",
+  "address": "123 MG Road, Sector 5",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "gst_number": "27AABCS1234C1Z5",
+  "payment_terms": 30,
+  "credit_limit": 500000,
+  "notes": "Long-standing client",
+  "risk_score": 0,
+  "risk_category": "Low Risk",
+  "risk_reason": "New customer, no payment history yet.",
+  "risk_action": "Maintain standard credit terms and monitor first transactions.",
+  "created_at": "2026-06-30T10:00:00+00:00",
+  "updated_at": "2026-06-30T10:00:00+00:00"
+}`}
+  curl={`curl -X POST https://api.payguard.ai/api/customers \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "business_name": "Sharma Industries",
+    "contact_person": "Anil Sharma",
+    "email": "anil@sharma.in",
+    "phone": "+91-9812345678",
+    "address": "123 MG Road, Sector 5",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "gst_number": "27AABCS1234C1Z5",
+    "payment_terms": 30,
+    "credit_limit": 500000,
+    "notes": "Long-standing client"
+  }'`}
+/>
+
+---
+
+<ApiEndpoint
+  method="GET"
+  path="/api/customers/{cid}"
+  description="Get a single customer with nested invoices, payments, and follow-ups. Includes computed total_pending and total_invoiced."
+  auth={true}
+  response={`{
+  "id": "cust-001",
+  "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "business_name": "Sharma Industries",
+  "contact_person": "Anil Sharma",
+  "email": "anil@sharma.in",
+  "phone": "+91-9812345678",
+  "address": "123 MG Road, Sector 5",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "gst_number": "27AABCS1234C1Z5",
+  "payment_terms": 30,
+  "credit_limit": 500000,
+  "notes": "Long-standing client",
+  "risk_score": 72,
+  "risk_category": "High Risk",
+  "risk_reason": "Multiple overdue invoices with broken payment promises.",
+  "risk_action": "Reduce credit limit and require upfront payment.",
+  "total_pending": 475000,
+  "total_invoiced": 1250000,
+  "invoices": [
+    {
+      "id": "inv-001",
+      "invoice_number": "INV-2026-001",
+      "amount": 250000,
+      "tax_amount": 45000,
+      "total_amount": 295000,
+      "paid_amount": 0,
+      "pending_amount": 295000,
+      "status": "Overdue",
+      "due_date": "2026-06-01",
+      "overdue_days": 29
+    }
+  ],
+  "payments": [],
+  "followups": [
+    {
+      "id": "fu-001",
+      "followup_type": "First overdue reminder",
+      "message": "Hi Anil, just following up on INV-2026-001...",
+      "channel": "WhatsApp",
+      "status": "Sent"
+    }
+  ],
+  "created_at": "2026-01-15T08:30:00+00:00",
+  "updated_at": "2026-06-28T14:20:00+00:00"
+}`}
+  curl={`curl -X GET https://api.payguard.ai/api/customers/cust-001 \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`}
+/>
+
+---
+
+<ApiEndpoint
+  method="PUT"
+  path="/api/customers/{cid}"
+  description="Update a customer's details. Only provided fields are updated; omitted fields remain unchanged."
+  auth={true}
+  body={`{
+  "credit_limit": 750000,
+  "payment_terms": 45,
+  "notes": "Credit limit increased after review"
+}`}
+  response={`{
+  "id": "cust-001",
+  "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "business_name": "Sharma Industries",
+  "contact_person": "Anil Sharma",
+  "email": "anil@sharma.in",
+  "phone": "+91-9812345678",
+  "address": "123 MG Road, Sector 5",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "gst_number": "27AABCS1234C1Z5",
+  "payment_terms": 45,
+  "credit_limit": 750000,
+  "notes": "Credit limit increased after review",
+  "risk_score": 72,
+  "risk_category": "High Risk",
+  "risk_reason": "Multiple overdue invoices with broken payment promises.",
+  "risk_action": "Reduce credit limit and require upfront payment.",
+  "created_at": "2026-01-15T08:30:00+00:00",
+  "updated_at": "2026-06-30T10:05:00+00:00"
+}`}
+  curl={`curl -X PUT https://api.payguard.ai/api/customers/cust-001 \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "credit_limit": 750000,
+    "payment_terms": 45,
+    "notes": "Credit limit increased after review"
+  }'`}
+/>
+
+---
+
+<ApiEndpoint
+  method="DELETE"
+  path="/api/customers/{cid}"
+  description="Delete a customer and cascade-delete all associated invoices, payments, and follow-ups. This action is irreversible."
+  auth={true}
+  response={`{
+  "ok": true
+}`}
+  curl={`curl -X DELETE https://api.payguard.ai/api/customers/cust-001 \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`}
+/>
+
+---
+
+<ApiEndpoint
+  method="GET"
+  path="/api/customers/{cid}/risk"
+  description="Get or refresh the risk assessment for a customer. Recalculates the risk score based on payment history, overdue invoices, broken promises, and disputed invoices."
+  auth={true}
+  response={`{
+  "risk_score": 72,
+  "risk_category": "High Risk",
+  "risk_reason": "3 overdue invoices totaling \u20b9475,000 with 2 broken payment promises.",
+  "risk_action": "Reduce credit limit to \u20b9200,000. Require 50% advance for new orders. Escalate to collections if no response in 7 days.",
+  "broken_promises": 2,
+  "total_pending": 475000
+}`}
+  curl={`curl -X GET https://api.payguard.ai/api/customers/cust-001/risk \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`}
+/>

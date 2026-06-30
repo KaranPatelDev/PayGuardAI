@@ -1,0 +1,135 @@
+:root {
+  --ifm-color-primary: #0A3B2C;
+  --ifm-color-primary-dark: #072A1F;
+  --ifm-color-primary-darker: #062419;
+  --ifm-color-primary-darkest: #041A12;
+  --ifm-color-primary-light: #1A5E47;
+  --ifm-color-primary-lighter: #2A7A5F;
+  --ifm-color-primary-lightest: #4A9A7F;
+  --ifm-link-color: #0A3B2C;
+  --ifm-code-font-size: 90%;
+  --ifm-font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  --ifm-heading-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  --ifm-navbar-height: 60px;
+  --docusaurus-highlighted-code-line-bg: rgba(10, 59, 44, 0.1);
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #4A9A7F;
+  --ifm-color-primary-dark: #3A8A6F;
+  --ifm-color-primary-darker: #2A7A5F;
+  --ifm-color-primary-darkest: #1A5E47;
+  --ifm-color-primary-light: #5AAA8F;
+  --ifm-color-primary-lighter: #6ABAA0;
+  --ifm-color-primary-lightest: #8AD0B8;
+  --ifm-link-color: #4A9A7F;
+  --docusaurus-highlighted-code-line-bg: rgba(74, 154, 127, 0.15);
+}
+
+/* Method badges */
+.method-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: white;
+}
+.method-get { background-color: #22863a; }
+.method-post { background-color: #0366d6; }
+.method-put { background-color: #e36209; }
+.method-delete { background-color: #d73a49; }
+
+/* API endpoint cards */
+.api-card {
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: var(--ifm-background-surface-color);
+  transition: box-shadow 0.2s;
+}
+.api-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* Diagram container */
+.diagram-container {
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 24px 0;
+  background: var(--ifm-background-surface-color);
+  overflow: hidden;
+}
+
+/* Feature grid */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.feature-card {
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 12px;
+  padding: 24px;
+  background: var(--ifm-background-surface-color);
+  transition: all 0.2s;
+}
+.feature-card:hover {
+  border-color: var(--ifm-color-primary);
+  box-shadow: 0 4px 12px rgba(10, 59, 44, 0.08);
+}
+
+/* Pricing table */
+.pricing-toggle {
+  display: inline-flex;
+  background: var(--ifm-color-emphasis-100);
+  border-radius: 8px;
+  padding: 4px;
+  margin: 24px 0;
+}
+.pricing-toggle button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  background: transparent;
+  color: var(--ifm-color-emphasis-600);
+  transition: all 0.2s;
+}
+.pricing-toggle button.active {
+  background: var(--ifm-color-primary);
+  color: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Table styles */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th {
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 2px solid var(--ifm-color-emphasis-200);
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ifm-color-emphasis-600);
+}
+td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ifm-color-emphasis-100);
+}
+tr:hover td {
+  background: var(--ifm-color-emphasis-100);
+}

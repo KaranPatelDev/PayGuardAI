@@ -1,0 +1,287 @@
+---
+title: Authentication Flow
+sidebar_position: 4
+description: JWT authentication lifecycle, registration, login, password reset, token structure, and security considerations.
+---
+
+# Authentication Flow
+
+PayGuard AI uses **JWT (JSON Web Tokens)** for stateless authentication with **bcrypt** for password hashing. All protected API endpoints require a valid Bearer token.
+
+---
+
+## JWT Token Lifecycle
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    TOKEN LIFECYCLE                       │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  ┌──────────┐    ┌──────────┐    ┌──────────────┐      │
+│  │ Register │───►│ Password │───►│ Access Token │      │
+│  │  (POST)  │    │  Hashed  │    │  Created     │      │
+│  └──────────┘    └──────────┘    └──────┬───────┘      │
+│                                         │               │
+│  ┌──────────┐    ┌──────────┐           │               │
+│  │  Login   │───►│ Verify   │◄──────────┘               │
+│  │  (POST)  │    │ Password │                           │
+│  └────┬─────┘    └──────────┘                           │
+│       │                                                 │
+│       ▼                                                 │
+│  ┌──────────────────┐                                   │
+│  │  New Access Token │                                  │
+│  │  (7-day expiry)   │                                  │
+│  └────┬─────────────┘                                   │
+│       │                                                 │
+│       ▼                                                 │
+│  ┌──────────────────┐    ┌──────────────────┐          │
+│  │  API Request      │───►│  Validate JWT    │          │
+│  │  Bearer: <token>  │    │  Decode + Check  │          │
+│  └──────────────────┘    └────┬─────────────┘          │
+│                               │                         │
+│                    ┌──────────┼──────────┐              │
+│                    ▼          ▼          ▼              │
+│              ┌──────────┐ ┌────────┐ ┌──────────┐      │
+│              │  Valid    │ │ Expired│ │ Invalid  │      │
+│              │  200 OK   │ │  401   │ │   401    │      │
+│              └──────────┘ └────────┘ └──────────┘      │
+│                                                         │
+│  ┌──────────────────────────────────────────┐          │
+│  │         PASSWORD RESET FLOW               │          │
+│  │  ForgotPassword ──► Email Sent ──►        │          │
+│  │  ResetPassword (token + new_password)     │          │
+│  │  Token: 15-min expiry, purpose-scoped     │          │
+│  └──────────────────────────────────────────┘          │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Registration Flow
+
+```
+Client                          Backend
+  │                               │
+  │  POST /api/auth/register      │
+  │  { full_name, email, ... }    │
+  │──────────────────────────────►│
+  │                               │──► Validate with Pydantic
+  │                               │──► Hash password (bcrypt)
+  │                               │──► Insert into users table
+  │                               │──► Insert default settings
+  │                               │──► Create access token (7 days)
+  │                               │
+  │  200 { access_token, user }   │
+  │◄──────────────────────────────│
+  │                               │
+  │  Store token in localStorage  │
+  │  Set Authorization header     │
+```
+
+### Request
+
+```bash
+curl -X POST https://your-backend.railway.app/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "full_name": "Rajesh Kumar",
+    "email": "rajesh@example.com",
+    "phone": "+91-9876543210",
+    "business_name": "Kumar Traders",
+    "business_type": "Wholesale",
+    "gst_number": "27AABCU9603R1ZM",
+    "password": "securePass123"
+  }'
+```
+
+### Response
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "token_type": "bearer",
+  "user": {
+    "id": "a1b2c3d4-...",
+    "full_name": "Rajesh Kumar",
+    "email": "rajesh@example.com",
+    "business_name": "Kumar Traders",
+    "created_at": "2025-01-15T10:30:00+00:00"
+  }
+}
+```
+
+---
+
+## Login Flow
+
+```
+Client                          Backend
+  │                               │
+  │  POST /api/auth/login         │
+  │  { email, password }          │
+  │──────────────────────────────►│
+  │                               │──► Find user by email
+  │                               │──► Verify password (bcrypt)
+  │                               │──► Create access token
+  │                               │
+  │  200 { access_token, user }   │
+  │◄──────────────────────────────│
+```
+
+### Request
+
+```bash
+curl -X POST https://your-backend.railway.app/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "rajesh@example.com",
+    "password": "securePass123"
+  }'
+```
+
+---
+
+## Password Reset Flow
+
+### Step 1 — Request Reset Link
+
+```
+Client                          Backend                         Email
+  │                               │                               │
+  │  POST /api/auth/forgot        │                               │
+  │  { email }                    │                               │
+  │──────────────────────────────►│                               │
+  │                               │──► Find user by email         │
+  │                               │──► Create reset token (15 min)│
+  │                               │                               │
+  │                               │  Send reset email ──────────►│
+  │                               │                               │
+  │  200 { message: "Email sent"} │                               │
+  │◄──────────────────────────────│                               │
+```
+
+```bash
+curl -X POST https://your-backend.railway.app/api/auth/forgot-password \
+  -H "Content-Type: application/json" \
+  -d '{"email": "rajesh@example.com"}'
+```
+
+### Step 2 — Reset Password
+
+```
+Client                          Backend
+  │                               │
+  │  POST /api/auth/reset         │
+  │  { token, new_password }      │
+  │──────────────────────────────►│
+  │                               │──► Decode reset token
+  │                               │──► Verify purpose == "password_reset"
+  │                               │──► Hash new password
+  │                               │──► Update users.password_hash
+  │                               │
+  │  200 { message: "Password     │
+  │         updated successfully"}│
+  │◄──────────────────────────────│
+```
+
+```bash
+curl -X POST https://your-backend.railway.app/api/auth/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token": "eyJhbGciOiJIUzI1NiIs...",
+    "new_password": "newSecurePass456"
+  }'
+```
+
+---
+
+## Token Structure
+
+### Access Token
+
+```json
+{
+  "sub": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "iat": 1736944200,
+  "exp": 1737549000
+}
+```
+
+| Claim | Description |
+|-------|-------------|
+| `sub` | User ID (UUID) |
+| `iat` | Issued at (Unix timestamp) |
+| `exp` | Expiration (Unix timestamp, +7 days) |
+
+### Reset Token
+
+```json
+{
+  "sub": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "purpose": "password_reset",
+  "iat": 1736944200,
+  "exp": 1736945100
+}
+```
+
+| Claim | Description |
+|-------|-------------|
+| `sub` | User ID (UUID) |
+| `purpose` | Must be `"password_reset"` — validated on decode |
+| `iat` | Issued at (Unix timestamp) |
+| `exp` | Expiration (Unix timestamp, +15 minutes) |
+
+---
+
+## Using the Token
+
+All protected endpoints require the `Authorization` header:
+
+```bash
+curl https://your-backend.railway.app/api/customers \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
+```
+
+The `get_current_user_id` FastAPI dependency extracts and validates the token:
+
+```python
+async def get_current_user_id(
+    creds: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> str:
+    if not creds or not creds.credentials:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user_id = decode_token(creds.credentials)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return user_id
+```
+
+---
+
+## Security Considerations
+
+| Consideration | Implementation |
+|---------------|----------------|
+| **Password storage** | bcrypt hashing with auto-generated salts — never stored in plain text |
+| **Token signing** | HMAC-SHA256 (HS256) with server-side secret (`JWT_SECRET`) |
+| **Token expiry** | Access tokens: 7 days. Reset tokens: 15 minutes. |
+| **Reset token scope** | `purpose: "password_reset"` claim prevents token misuse across flows |
+| **No refresh tokens** | Stateless design — users re-login after expiry |
+| **Secret management** | `JWT_SECRET` loaded from environment variables, never committed to code |
+| **CORS** | Configurable allowed origins via `CORSMiddleware` |
+| **Input validation** | Pydantic models validate all auth-related request payloads |
+| **SQL injection** | SQLAlchemy ORM with parameterized queries |
+| **Logging** | Auth events logged with structured JSON (no passwords or tokens logged) |
+
+### Environment Variables
+
+```env
+JWT_SECRET=your-super-secret-key-here
+JWT_ALGORITHM=HS256
+JWT_EXPIRE_MINUTES=10080
+```
+
+:::caution
+Never commit `JWT_SECRET` to version control. Use a strong, randomly generated value (minimum 32 characters).
+:::

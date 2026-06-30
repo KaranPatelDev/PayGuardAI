@@ -1,0 +1,65 @@
+---
+title: Dashboard
+sidebar_position: 1
+description: Real-time overview of your debt recovery operations with KPI cards, interactive charts, and activity feed.
+---
+
+## Overview
+
+The Dashboard is your central command center for monitoring debt recovery performance at a glance. It displays **8 KPI cards** summarizing key metrics, **5 interactive charts** for visual analysis, and a **recent activity feed** to track ongoing operations.
+
+### KPI Cards
+
+| Card | Description |
+|------|-------------|
+| Total Pending | Sum of all pending invoice amounts |
+| Total Recovered | Sum of all recovered amounts |
+| Recovery Rate | Percentage of total debt recovered |
+| Active Customers | Number of customers with outstanding invoices |
+| Overdue Invoices | Count of invoices past their due date |
+| High-Risk Customers | Customers with High or Critical risk scores |
+| Upcoming Due | Invoices due within the next 7 days |
+| Average Recovery Time | Mean days from overdue to payment |
+
+### Charts
+
+1. **Pending vs Recovered** — Bar chart comparing amounts pending and recovered over time
+2. **Status Distribution** — Pie chart showing invoices by status (Draft, Sent, Overdue, Paid, etc.)
+3. **Risk Distribution** — Doughnut chart showing customers by risk category (Low, Medium, High, Critical)
+4. **Monthly Trend** — Line chart tracking recovery performance month over month
+5. **Top Overdue** — Horizontal bar chart listing the largest overdue invoices
+
+### Recent Activity Feed
+
+A chronological feed of the latest events including new payments, status changes, follow-ups sent, and customer updates.
+
+---
+
+## How It Works
+
+1. On login, the dashboard fetches aggregated data from multiple API endpoints
+2. KPI cards update in real-time as new payments and invoices are recorded
+3. Charts re-render when date filters are applied
+4. The activity feed polls for new events every 30 seconds
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/dashboard/summary` | Returns all 8 KPI card values |
+| GET | `/api/dashboard/charts` | Returns chart data with optional date range filters |
+| GET | `/api/dashboard/recent-activity` | Returns paginated list of recent events |
+
+:::tip
+Use the `from` and `to` query parameters on the charts endpoint to filter data by date range. Example: `GET /api/dashboard/charts?from=2026-01-01&to=2026-06-30`
+:::
+
+:::note
+The dashboard aggregates data across all customers and invoices. For customer-specific views, use the Customer Management module.
+:::
+
+:::caution
+Large datasets may cause a slight delay in chart rendering. The API caches results for 5 minutes to improve performance.
+:::

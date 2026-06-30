@@ -1,0 +1,213 @@
+---
+title: Quick Start
+sidebar_position: 1
+description: Get up and running with PayGuard AI in under 5 minutes.
+---
+
+# Quick Start Guide
+
+Get up and running with PayGuard AI in under 5 minutes. This guide walks you through the core workflow: register, add a customer, create an invoice, send an AI follow-up, and record a payment.
+
+---
+
+## Prerequisites
+
+- Access to the PayGuard AI API at `https://api.payguard.ai`
+- A valid email address for registration
+- `curl` or any HTTP client (Postman, Insomnia, etc.)
+
+---
+
+## Step 1: Register an Account
+
+Create a new account to get your API token.
+
+```bash
+curl -X POST https://api.payguard.ai/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Your Company Name",
+    "email": "you@company.com",
+    "password": "securepassword123",
+    "company": "Your Company Pvt Ltd",
+    "gstin": "27AABCU9603R1ZM"
+  }'
+```
+
+Response:
+
+```json
+{
+  "id": "usr_abc123",
+  "email": "you@company.com",
+  "token": "eyJhbGciOiJIUzI1NiIs..."
+}
+```
+
+:::note
+Save the `token` from the response — you'll need it for all subsequent API calls. Set it as an environment variable:
+
+```bash
+export PAYGUARD_TOKEN="eyJhbGciOiJIUzI1NiIs..."
+```
+:::
+
+---
+
+## Step 2: Add a Customer
+
+Create a customer record in your account.
+
+```bash
+curl -X POST https://api.payguard.ai/api/v1/customers \
+  -H "Authorization: Bearer $PAYGUARD_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Rajesh Kumar",
+    "company": "Kumar Manufacturing Co.",
+    "email": "rajesh@kumarmfg.com",
+    "phone": "+919876543210",
+    "gstin": "07AADCK1234F1Z5",
+    "address": "123 Industrial Area, Noida, UP - 201301"
+  }'
+```
+
+Response:
+
+```json
+{
+  "id": "cus_xyz789",
+  "name": "Rajesh Kumar",
+  "risk_score": 0,
+  "status": "active"
+}
+```
+
+:::tip
+Customers start with a risk score of 0. The AI will update this score as payment history develops.
+:::
+
+---
+
+## Step 3: Create an Invoice
+
+Generate an invoice for the customer.
+
+```bash
+curl -X POST https://api.payguard.ai/api/v1/invoices \
+  -H "Authorization: Bearer $PAYGUARD_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": "cus_xyz789",
+    "invoice_number": "INV-2026-001",
+    "amount": 85000,
+    "currency": "INR",
+    "description": "Steel Components - Batch #45",
+    "due_date": "2026-07-15",
+    "items": [
+      {
+        "description": "Steel Plate 10mm",
+        "quantity": 50,
+        "unit_price": 1200,
+        "amount": 60000
+      },
+      {
+        "description": "Steel Rod 12mm",
+        "quantity": 25,
+        "unit_price": 1000,
+        "amount": 25000
+      }
+    ]
+  }'
+```
+
+Response:
+
+```json
+{
+  "id": "inv_001",
+  "invoice_number": "INV-2026-001",
+  "amount": 85000,
+  "status": "pending",
+  "due_date": "2026-07-15"
+}
+```
+
+---
+
+## Step 4: Generate an AI Follow-up
+
+Use AI to generate and send a follow-up message for an overdue invoice.
+
+```bash
+curl -X POST https://api.payguard.ai/api/v1/followups/generate \
+  -H "Authorization: Bearer $PAYGUARD_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "invoice_id": "inv_001",
+    "channel": "whatsapp",
+    "tone": "professional",
+    "language": "en"
+  }'
+```
+
+Response:
+
+```json
+{
+  "id": "fu_001",
+  "message": "Dear Rajesh, this is a friendly reminder that invoice INV-2026-001 for ₹85,000 was due on 15 Jul 2026. Please arrange the payment at your earliest convenience. Thank you for your business!",
+  "channel": "whatsapp",
+  "status": "draft",
+  "sent_at": null
+}
+```
+
+:::caution
+Messages are created in `draft` status by default. To send immediately, add `"auto_send": true` to the request body.
+:::
+
+---
+
+## Step 5: Record a Payment
+
+Mark the invoice as paid.
+
+```bash
+curl -X POST https://api.payguard.ai/api/v1/payments \
+  -H "Authorization: Bearer $PAYGUARD_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "invoice_id": "inv_001",
+    "amount": 85000,
+    "method": "bank_transfer",
+    "reference": "NEFT-2026-0715-001",
+    "paid_at": "2026-07-15T14:30:00Z"
+  }'
+```
+
+Response:
+
+```json
+{
+  "id": "pay_001",
+  "invoice_id": "inv_001",
+  "amount": 85000,
+  "status": "completed",
+  "invoice_status": "paid"
+}
+```
+
+:::note
+Recording a payment automatically updates the invoice status to `paid` and adjusts the customer's risk score.
+:::
+
+---
+
+## What's Next?
+
+Now that you've completed the core workflow, explore these topics:
+
+- **[Local Setup](./local-setup)** — Set up the full development environment
+- **[API Reference](../api/authentication)** — Complete API documentation
+- **[AI Configuration](../api/ai-services)** — Customize AI follow-up behavior

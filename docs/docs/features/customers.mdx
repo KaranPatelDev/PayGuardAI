@@ -1,0 +1,51 @@
+---
+title: Customer Management
+sidebar_position: 2
+description: Manage customer profiles, risk scores, and view detailed histories of invoices, payments, and follow-ups.
+---
+
+## Overview
+
+Customer Management provides full CRUD operations for your customer database. Each customer profile includes a **risk score**, **invoice history**, **payment records**, and **follow-up logs**. You can search and filter customers by risk category to prioritize recovery efforts.
+
+### Features
+
+- **Create, Read, Update, Delete** customer records
+- **Risk scoring** automatically calculated per customer
+- **Search** by name, email, phone, or company
+- **Filter** by risk category: Low, Medium, High, Critical
+- **Customer detail view** with tabs for invoices, payments, and follow-ups
+
+---
+
+## How It Works
+
+1. Add customers manually or import via CSV
+2. Risk score is calculated on first invoice creation and auto-refreshes on changes
+3. Customer detail view aggregates all related data (invoices, payments, follow-ups)
+4. Use the risk filter on the customer list to focus on high-priority accounts
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/customers` | List all customers with optional search and filter params |
+| POST | `/api/customers` | Create a new customer |
+| GET | `/api/customers/{cid}` | Get customer details by ID |
+| PUT | `/api/customers/{cid}` | Update customer information |
+| DELETE | `/api/customers/{cid}` | Delete a customer |
+| GET | `/api/customers/{cid}/risk` | Get detailed risk assessment for a customer |
+
+:::tip
+Use `?risk_category=high` or `?risk_category=critical` query parameters on the list endpoint to quickly find customers needing immediate attention.
+:::
+
+:::note
+Deleting a customer will also remove all associated invoices, payments, and follow-up records. This action cannot be undone.
+:::
+
+:::caution
+Risk scores are recalculated automatically when invoices or payments change. Manual edits to risk scores are not recommended.
+:::

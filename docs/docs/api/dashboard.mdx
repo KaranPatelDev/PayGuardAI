@@ -1,0 +1,121 @@
+---
+sidebar_position: 7
+title: Dashboard
+---
+
+import ApiEndpoint from '@site/src/components/ApiEndpoint';
+
+# Dashboard
+
+KPI metrics, chart data, and recent activity for the main dashboard view.
+
+---
+
+<ApiEndpoint
+  method="GET"
+  path="/api/dashboard/summary"
+  description="Get 10 key performance indicators including total invoiced, pending, overdue, recovered amounts, collection efficiency, and counts."
+  auth={true}
+  response={`{
+  "total_invoiced": 4850000,
+  "total_pending": 1875000,
+  "total_overdue": 975000,
+  "total_recovered": 2975000,
+  "overdue_count": 4,
+  "high_risk_count": 2,
+  "avg_delay_days": 18,
+  "collection_efficiency": 61.3,
+  "customer_count": 12,
+  "invoice_count": 28
+}`}
+  curl={`curl -X GET https://api.payguard.ai/api/dashboard/summary \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`}
+/>
+
+---
+
+<ApiEndpoint
+  method="GET"
+  path="/api/dashboard/charts"
+  description="Get 5 chart datasets: pending vs recovered pie, invoice status distribution, customer risk distribution, monthly payment trend (last 6 months), and top 5 overdue customers."
+  auth={true}
+  response={`{
+  "pending_vs_recovered": [
+    {"name": "Recovered", "value": 2975000},
+    {"name": "Pending", "value": 1875000}
+  ],
+  "status_distribution": [
+    {"name": "Paid", "value": 14},
+    {"name": "Overdue", "value": 4},
+    {"name": "Sent", "value": 6},
+    {"name": "Partially Paid", "value": 3},
+    {"name": "Due Soon", "value": 1}
+  ],
+  "risk_distribution": [
+    {"name": "Low Risk", "value": 7},
+    {"name": "Medium Risk", "value": 3},
+    {"name": "High Risk", "value": 2}
+  ],
+  "monthly_trend": [
+    {"month": "Jan 26", "amount": 450000},
+    {"month": "Feb 26", "amount": 620000},
+    {"month": "Mar 26", "amount": 380000},
+    {"month": "Apr 26", "amount": 510000},
+    {"month": "May 26", "amount": 720000},
+    {"month": "Jun 26", "amount": 295000}
+  ],
+  "top_overdue": [
+    {"customer": "Sharma Industries", "amount": 475000},
+    {"customer": "Mehta Textiles", "amount": 320000},
+    {"customer": "Patel Exports", "amount": 180000}
+  ],
+  "total_invoiced": 4850000
+}`}
+  curl={`curl -X GET https://api.payguard.ai/api/dashboard/charts \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`}
+/>
+
+---
+
+<ApiEndpoint
+  method="GET"
+  path="/api/dashboard/recent-activity"
+  description="Get the latest 5 invoices, 5 payments, and 5 follow-ups for the activity feed."
+  auth={true}
+  response={`{
+  "invoices": [
+    {
+      "id": "inv-028",
+      "invoice_number": "INV-2026-028",
+      "customer_id": "cust-005",
+      "total_amount": 185000,
+      "pending_amount": 185000,
+      "status": "Sent",
+      "due_date": "2026-07-30",
+      "updated_at": "2026-06-29T16:00:00+00:00"
+    }
+  ],
+  "payments": [
+    {
+      "id": "pay-015",
+      "invoice_id": "inv-022",
+      "amount": 92000,
+      "payment_date": "2026-06-28",
+      "payment_mode": "UPI",
+      "created_at": "2026-06-28T11:30:00+00:00"
+    }
+  ],
+  "followups": [
+    {
+      "id": "fu-018",
+      "invoice_id": "inv-015",
+      "followup_type": "Final warning",
+      "channel": "Email",
+      "status": "Sent",
+      "created_at": "2026-06-27T09:00:00+00:00"
+    }
+  ]
+}`}
+  curl={`curl -X GET https://api.payguard.ai/api/dashboard/recent-activity \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`}
+/>

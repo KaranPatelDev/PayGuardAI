@@ -1,0 +1,80 @@
+---
+title: Recovery Reports
+sidebar_position: 8
+description: AI-powered debt recovery report generation with per-customer or per-invoice analysis and actionable recommendations.
+---
+
+## Overview
+
+Recovery Reports generate **comprehensive debt recovery documents** using AI analysis. Reports can be generated per-customer or per-invoice and include pending amounts, risk assessment, recommended actions, and recovery timelines.
+
+### Report Components
+
+| Section | Contents |
+|---------|----------|
+| Executive Summary | High-level overview of recovery status |
+| Pending Amounts | Breakdown of outstanding invoices |
+| Risk Assessment | Customer risk score and category |
+| Recovery Timeline | Expected recovery dates by invoice |
+| Recommended Actions | AI-suggested next steps |
+| Follow-up History | Log of all communications sent |
+
+### Report Types
+
+- **Per-Customer Report** — Full recovery status for a specific customer
+- **Per-Invoice Report** — Detailed analysis for a single invoice
+- **Portfolio Report** — Summary across all customers (coming soon)
+
+---
+
+## How It Works
+
+1. Select a customer or invoice to generate a report
+2. The AI analyzes payment history, risk score, and follow-up records
+3. A structured report is generated with actionable recommendations
+4. Reports can be downloaded as PDF or shared via email
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/ai/generate-recovery-report` | Generate an AI-powered recovery report |
+
+### Request Body
+
+```json
+{
+  "type": "customer",
+  "id": "cust_abc123",
+  "include_timeline": true,
+  "include_recommendations": true
+}
+```
+
+### Response
+
+```json
+{
+  "report_id": "rpt_xyz789",
+  "generated_at": "2026-06-30T10:00:00Z",
+  "summary": "...",
+  "pending_amounts": [...],
+  "risk_assessment": {...},
+  "timeline": [...],
+  "recommendations": [...]
+}
+```
+
+:::tip
+Generate recovery reports before collection calls to have a complete picture of the customer's status and recommended approach.
+:::
+
+:::note
+Reports are generated in real-time and reflect the latest data. Regenerate if significant changes occur after initial generation.
+:::
+
+:::caution
+AI-generated recommendations should be reviewed by a human before taking action. They are suggestions, not directives.
+:::

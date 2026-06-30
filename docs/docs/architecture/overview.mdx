@@ -1,0 +1,144 @@
+---
+title: System Architecture Overview
+sidebar_position: 1
+description: High-level overview of the PayGuard AI system architecture, including all layers, data flow, and security design.
+---
+
+import ArchitectureDiagram from '@site/src/components/ArchitectureDiagram';
+
+# System Architecture Overview
+
+PayGuard AI is a full-stack payment recovery platform built with a modern, layered architecture. The system is designed for reliability, security, and AI-powered automation.
+
+## Interactive Architecture Diagram
+
+<ArchitectureDiagram />
+
+---
+
+## Layer Descriptions
+
+### Frontend — React 19 SPA
+
+| Aspect | Detail |
+|--------|--------|
+| **Framework** | React 19 (SPA via Create React App + CRACO) |
+| **Routing** | React Router DOM v7 |
+| **Styling** | Tailwind CSS 3.4 + shadcn/ui (Radix primitives) |
+| **State** | TanStack React Query for server state, React Context for auth |
+| **Charts** | Recharts for dashboards and cashflow visualization |
+| **Icons** | lucide-react |
+
+The frontend communicates with the backend exclusively through a RESTful API proxy layer.
+
+### Backend — FastAPI (Python)
+
+| Aspect | Detail |
+|--------|--------|
+| **Framework** | FastAPI 0.110 (async) |
+| **ORM** | SQLAlchemy 2.0 async |
+| **DB Driver** | asyncpg (PostgreSQL) |
+| **Auth** | JWT (PyJWT) + bcrypt password hashing |
+| **AI** | Claude Sonnet 4.6 via Emergent LLM Key + rule-based fallback |
+| **Email** | aiosmtplib (Gmail SMTP) |
+| **Logging** | Structured JSON logs with rotating file handler |
+
+All endpoints are mounted under the `/api` prefix.
+
+### Database — PostgreSQL (Neon)
+
+| Aspect | Detail |
+|--------|--------|
+| **Engine** | PostgreSQL 15+ (Neon serverless) |
+| **Tables** | `users`, `settings`, `customers`, `invoices`, `payments`, `followups` |
+| **IDs** | UUID v4 (client-generated) |
+| **Timestamps** | ISO 8601 UTC strings |
+| **Soft deletes** | Not used — hard deletes with cascade |
+
+### AI Layer — Hybrid Approach
+
+| Component | Description |
+|-----------|-------------|
+| **Primary** | Claude Sonnet 4.6 via Emergent unified LLM key |
+| **Fallback** | Rule-based engine (deterministic templates) |
+| **Use cases** | Follow-up message generation, risk scoring, recovery reports |
+| **Invoice OCR** | File parsing with structured extraction |
+
+---
+
+## Data Flow
+
+```
+Browser (React 19 SPA)
+    │
+    │  HTTPS
+    ▼
+Vercel CDN / Edge
+    │
+    │  API Proxy
+    ▼
+FastAPI Backend (Python async)
+    │
+    ├──► JWT Auth (validate tokens, hash passwords)
+    │
+    ├──► PostgreSQL (CRUD via SQLAlchemy async)
+    │
+    ├──► AI Services (Claude + rule-based fallback)
+    │
+    ├──► Gmail SMTP (password reset emails)
+    │
+    └──► Structured Logs (JSON rotating files)
+```
+
+1. **User action** triggers a fetch/axios call from the React SPA.
+2. **Vercel** serves the static bundle and proxies `/api/*` to the backend.
+3. **FastAPI** validates the JWT token via `get_current_user_id` dependency.
+4. **SQLAlchemy async** executes parameterized queries against PostgreSQL.
+5. **AI service** generates follow-up messages, risk scores, or recovery reports.
+6. **Email service** sends password reset links via Gmail SMTP.
+7. **Structured logger** writes JSON events to rotating log files.
+
+---
+
+## Security Layers
+
+### Authentication — JWT
+
+- Tokens are signed with HMAC-SHA256 (`HS256`).
+- Access tokens expire after **7 days** (configurable via `JWT_EXPIRE_MINUTES`).
+- Reset tokens expire after **15 minutes** and carry a `purpose: "password_reset"` claim.
+- The `get_current_user_id` FastAPI dependency enforces auth on protected routes.
+
+### Password Hashing — bcrypt
+
+- Passwords are hashed with `bcrypt` using auto-generated salts.
+- The `hash_password` and `verify_password` utilities in `auth_utils.py` handle all hashing.
+- Plain-text passwords are never stored or logged.
+
+### CORS Configuration
+
+- The backend uses Starlette's `CORSMiddleware`.
+- Allowed origins are configured via environment variables.
+- Credentials are supported for cookie-based flows if needed.
+
+### Additional Security Measures
+
+| Measure | Implementation |
+|---------|----------------|
+| **Parameterized queries** | SQLAlchemy ORM prevents SQL injection |
+| **Input validation** | Pydantic models validate all request payloads |
+| **Structured logging** | Sensitive data is excluded from logs |
+| **Token expiry** | Short-lived tokens limit exposure window |
+| **Environment secrets** | `JWT_SECRET` and API keys stored in env vars, not code |
+
+---
+
+## Deployment Architecture
+
+| Component | Platform | Notes |
+|-----------|----------|-------|
+| Frontend | Vercel | Static hosting with edge caching |
+| Backend | Railway | Container-based Python hosting |
+| Database | Neon | Serverless PostgreSQL (branching) |
+| AI API | Emergent | Unified LLM key for Claude access |
+| Email | Gmail SMTP | Transactional password reset emails |

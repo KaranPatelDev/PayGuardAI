@@ -1,0 +1,71 @@
+---
+title: AI Follow-ups
+sidebar_position: 5
+description: Generate personalized follow-up messages via WhatsApp, email, and call scripts using AI with multiple tone options.
+---
+
+## Overview
+
+AI Follow-ups generates **context-aware recovery messages** across three channels: WhatsApp, email, and phone call scripts. Choose from **5 tone options** and **4 message types** to match the escalation stage. Powered by Claude Sonnet 4.6 with rule-based fallback.
+
+### Message Channels
+
+| Channel | Format |
+|---------|--------|
+| WhatsApp | Short, conversational messages with emojis |
+| Email | Formal letter format with subject line |
+| Call Script | Structured talking points for phone calls |
+
+### Tone Options
+
+| Tone | Use Case |
+|------|----------|
+| Polite | First-time reminders, maintaining good relationships |
+| Professional | Standard business communications |
+| Friendly | Customers with good payment history |
+| Strict | Repeated overdue, need firmer approach |
+| Final Warning | Last escalation before legal action |
+
+### Message Types
+
+1. **First Overdue Reminder** — Gentle nudge for recently overdue invoices
+2. **Second Reminder** — More direct follow-up after no response
+3. **Strong Reminder** — Firm message emphasizing urgency
+4. **Final Warning** — Legal-action warning, last escalation step
+
+### AI Engine
+
+- **Primary**: Claude Sonnet 4.6 for natural, contextual messages
+- **Fallback**: Rule-based templates when AI service is unavailable
+- All generated messages are saved as proof trail for compliance
+
+---
+
+## How It Works
+
+1. Select an invoice and choose channel, tone, and message type
+2. The AI generates a personalized message using invoice and customer data
+3. Preview and edit the message before sending
+4. The message is saved in the follow-up history as proof trail
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/ai/generate-followup` | Generate an AI follow-up message |
+| GET | `/api/followups` | List all follow-up records |
+| POST | `/api/followups` | Save a follow-up record manually |
+
+:::tip
+Start with Polite tone and escalate gradually. Abruptly using Strict tone on first contact can damage customer relationships.
+:::
+
+:::note
+All generated messages are logged with timestamps and cannot be deleted. This ensures a complete audit trail for compliance.
+:::
+
+:::caution
+The AI fallback uses template-based messages which may lack personalization. Ensure the AI service is available for best results.
+:::

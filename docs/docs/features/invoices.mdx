@@ -1,0 +1,76 @@
+---
+title: Invoice Tracking
+sidebar_position: 3
+description: Track invoices through their full lifecycle with auto-status calculation, OCR support, and recovery timelines.
+---
+
+## Overview
+
+Invoice Tracking manages the complete lifecycle of your invoices from creation to payment. It supports **auto-status calculation** based on due dates and payment records, **OCR extraction** from uploaded PDFs/images, and a **6-step recovery timeline** for overdue invoices.
+
+### Invoice Lifecycle
+
+```
+Draft → Sent → Due Soon → Overdue → Partially Paid → Paid
+```
+
+| Status | Description |
+|--------|-------------|
+| Draft | Invoice created but not yet sent |
+| Sent | Invoice delivered to customer |
+| Due Soon | Invoice due within 7 days |
+| Overdue | Invoice past due date with no payment |
+| Partially Paid | Some payment received, balance remains |
+| Paid | Full payment received |
+
+### Invoice OCR
+
+Upload a PDF or image of an invoice and the system will extract:
+- Invoice number and date
+- Amount and tax details
+- Due date and line items
+- Customer information
+
+### Recovery Timeline (6 Steps)
+
+1. **Invoice Created** — Record entered into the system
+2. **Reminder Sent** — First follow-up message dispatched
+3. **Second Reminder** — Escalated reminder if no response
+4. **Strong Reminder** — Strict tone message with deadline
+5. **Final Warning** — Legal-action warning sent
+6. **Recovery Initiated** — Payment received or escalated to collections
+
+---
+
+## How It Works
+
+1. Create invoices manually or upload via OCR
+2. Status auto-calculates based on due date and payment records
+3. The recovery timeline advances as follow-ups are sent
+4. Mark invoices as paid (full or partial) when payments arrive
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/invoices` | List all invoices with filters |
+| POST | `/api/invoices` | Create a new invoice |
+| GET | `/api/invoices/{iid}` | Get invoice details |
+| PUT | `/api/invoices/{iid}` | Update invoice information |
+| DELETE | `/api/invoices/{iid}` | Delete an invoice |
+| POST | `/api/invoices/{iid}/mark-paid` | Mark invoice as paid (full or partial) |
+| GET | `/api/invoices/{iid}/timeline` | Get recovery timeline milestones |
+
+:::tip
+Use the OCR endpoint to quickly digitize paper invoices. The system achieves 95%+ accuracy on standard invoice formats.
+:::
+
+:::note
+Status is always auto-calculated. Do not manually set status — it will be overwritten on the next recalculation.
+:::
+
+:::caution
+Deleting an invoice will remove all associated payment records and follow-up history. Consider marking it as void instead.
+:::

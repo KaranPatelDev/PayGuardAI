@@ -1,0 +1,29 @@
+---
+sidebar_position: 8
+title: Cashflow
+---
+
+import ApiEndpoint from '@site/src/components/ApiEndpoint';
+
+# Cashflow
+
+Risk-weighted cashflow forecasting based on pending invoices and customer risk profiles.
+
+---
+
+<ApiEndpoint
+  method="GET"
+  path="/api/cashflow/forecast"
+  description="Get a risk-weighted cashflow forecast. Calculates expected recovery for this week and this month using customer risk weights (Low=95%, Medium=75%, High=45%, Critical=20%). Includes best-case and worst-case scenarios."
+  auth={true}
+  response={`{
+  "expected_this_week": 312500,
+  "expected_this_month": 890000,
+  "high_risk_pending": 475000,
+  "likely_delayed": 261250,
+  "best_case_recovery": 1875000,
+  "worst_case_recovery": 1108750
+}`}
+  curl={`curl -X GET https://api.payguard.ai/api/cashflow/forecast \\
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`}
+/>
