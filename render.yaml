@@ -3,11 +3,9 @@ services:
     name: payguard-api
     runtime: python
     plan: free
-    buildCommand: chmod +x backend/build.sh && backend/build.sh
+    buildCommand: pip install -r backend/requirements.txt
     startCommand: cd backend && uvicorn server:app --host 0.0.0.0 --port $PORT
     envVars:
-      - key: PYTHON_VERSION
-        value: "3.12.11"
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET
@@ -16,8 +14,6 @@ services:
         value: HS256
       - key: JWT_EXPIRE_MINUTES
         value: "10080"
-      - key: EMERGENT_LLM_KEY
-        sync: false
       - key: CORS_ORIGINS
         sync: false
       - key: LOG_LEVEL
