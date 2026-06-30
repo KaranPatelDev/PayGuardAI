@@ -13,7 +13,17 @@ Protected endpoints depend on `get_current_user_id`, which validates the bearer 
 FastAPI and Pydantic validate structured request bodies. File uploads enforce allowed MIME types and a 10 MB limit.
 
 ## Database Security
-MongoDB credentials must be stored in environment variables. Database network access should be restricted to backend services.
+PostgreSQL (Neon) credentials must be stored in environment variables. Database network access is restricted to backend services. SSL is enforced via connection configuration.
+
+## Structured Logging for Audit
+The backend implements structured JSON logging that captures security-relevant events:
+- Login success/failure events with user ID and email
+- Registration events
+- JWT token validation failures
+- Database connection errors
+- Unhandled exceptions with full stack traces
+
+Logs are written to `app.log`, `error.log`, and `access.log` with sensitive data (passwords, tokens, secrets) automatically masked by the `SensitiveFilter`.
 
 ## Environment Variable Protection
 Never commit `.env` files, JWT secrets, database credentials, AI keys, or provider tokens.

@@ -59,15 +59,20 @@ The platform provides:
 - Better customer risk awareness
 
 ## Actual Tech Stack in This Repository
-- Frontend: React, React Router, Tailwind CSS, shadcn-style UI components, Recharts, lucide-react
-- Backend: FastAPI
-- Database: MongoDB through Motor async driver
+- Frontend: React 19, React Router, Tailwind CSS, shadcn/ui, Recharts, lucide-react
+- Backend: FastAPI, SQLAlchemy async, asyncpg
+- Database: PostgreSQL (Neon serverless)
 - Authentication: JWT bearer tokens with bcrypt password hashing
-- Deployment: Existing hosted web app at https://invoice-recovery-5.emergent.host/
+- Logging: Structured JSON logging with rotating file handlers
+- Deployment: Render (backend) + Vercel (frontend) + Neon (database)
 
-> Accuracy note: The request described Vue.js and PostgreSQL, but the inspected repository uses React and MongoDB. The documentation describes the real implementation and lists PostgreSQL as a recommended future relational option.
+## Demo Account
+```text
+Email: demo@payguard.ai
+Password: demo123
+```
 
-## Documentation Folder Structure
+Do not enter real customer financial data in a demo or staging environment.
 ```text
 documentation/
 ├── README.md
