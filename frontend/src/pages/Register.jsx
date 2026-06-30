@@ -16,14 +16,16 @@ export default function Register() {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     try {
       await register(form);
+      navigate("/app/dashboard", { replace: true });
       toast.success("Account created!");
-      navigate("/app/dashboard");
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Registration failed");
-    } finally { setLoading(false); }
+      setLoading(false);
+    }
   };
 
   return (

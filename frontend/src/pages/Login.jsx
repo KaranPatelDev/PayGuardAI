@@ -16,14 +16,14 @@ export default function Login() {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     try {
       await login(email, password);
+      navigate("/app/dashboard", { replace: true });
       toast.success("Welcome back!");
-      navigate("/app/dashboard");
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Login failed");
-    } finally {
       setLoading(false);
     }
   };

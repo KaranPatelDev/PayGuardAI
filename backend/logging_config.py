@@ -18,6 +18,13 @@ SENSITIVE_KEYS = {
 
 ROOT_DIR = Path(__file__).parent
 
+STANDARD_LOG_RECORD_KEYS = {
+    "name", "msg", "args", "levelname", "levelno", "pathname", "filename",
+    "module", "exc_info", "exc_text", "stack_info", "lineno", "funcName",
+    "created", "msecs", "relativeCreated", "thread", "threadName",
+    "processName", "process", "message",
+}
+
 
 class SensitiveFilter(logging.Filter):
     """Automatically redact sensitive fields from log records."""
@@ -94,6 +101,19 @@ class JSONFormatter(logging.Formatter):
 
         if hasattr(record, "extra_data") and isinstance(record.extra_data, dict):
             log_entry["data"] = _redact_dict(record.extra_data)
+
+        known_extra_keys = {
+            "request_id", "user_id", "event", "method", "path", "status_code",
+            "duration_ms", "client_ip", "error_type", "error_message",
+            "context", "extra_data", "traceback",
+        }
+        extra_data = log_entry.get("data", {})
+        for key, value in record.__dict__.items():
+            if key in STANDARD_LOG_RECORD_KEYS or key in known_extra_keys or key.startswith("_"):
+                continue
+            extra_data[key] = value
+        if extra_data:
+            log_entry["data"] = _redact_dict(extra_data)
 
         tb = getattr(record, "traceback", None)
         if tb:

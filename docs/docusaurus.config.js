@@ -14,8 +14,8 @@ const config = {
   url: 'https://docs.payguard.ai',
   baseUrl: '/',
 
-  organizationName: 'payguard',
-  projectName: 'payguard-ai',
+  organizationName: 'KaranPatelDev',
+  projectName: 'payguardai',
 
   onBrokenLinks: 'warn',
   onBrokenMarkdownLinks: 'warn',
@@ -73,7 +73,7 @@ const config = {
             position: 'left',
           },
           {
-            href: 'https://github.com/payguard/payguard-ai',
+            href: 'https://github.com/KaranPatelDev/payguardai',
             label: 'GitHub',
             position: 'right',
           },
@@ -103,7 +103,7 @@ const config = {
           {
             title: 'Community',
             items: [
-              { label: 'GitHub', href: 'https://github.com/payguard/payguard-ai' },
+              { label: 'GitHub', href: 'https://github.com/KaranPatelDev/payguardai' },
               { label: 'Support', href: 'mailto:support@payguard.ai' },
             ],
           },

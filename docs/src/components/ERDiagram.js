@@ -1,5 +1,14 @@
-import React, { useCallback, useMemo } from 'react';
-import ReactFlow, { MiniMap, Controls, Background, useNodesState, useEdgesState, MarkerType } from 'reactflow';
+import React, { useCallback, useMemo, useState } from 'react';
+import ReactFlow, {
+  MiniMap,
+  Controls,
+  Background,
+  useNodesState,
+  useEdgesState,
+  MarkerType,
+  Handle,
+  Position,
+} from 'reactflow';
 import 'reactflow/dist/style.css';
 
 const tables = [
@@ -60,33 +69,30 @@ const edges = [
 
 function TableNode({ data }) {
   return (
-    <div style={{
-      background: 'var(--ifm-background-surface-color)',
-      border: `2px solid ${data.color}`,
-      borderRadius: '8px',
-      overflow: 'hidden',
-      minWidth: '200px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-    }}>
-      <div style={{
-        background: data.color,
-        color: 'white',
-        padding: '8px 12px',
-        fontWeight: 700,
-        fontSize: '13px',
-        fontFamily: 'monospace',
-      }}>
-        {data.label}
+    <div
+      className={`flow-card er-table ${data.isActive ? 'is-active' : ''} ${data.isDimmed ? 'is-dimmed' : ''}`}
+      style={{ '--node-color': data.color }}
+    >
+      <Handle id="top" type="source" position={Position.Top} />
+      <Handle id="top" type="target" position={Position.Top} />
+      <Handle id="bottom" type="source" position={Position.Bottom} />
+      <Handle id="bottom" type="target" position={Position.Bottom} />
+      <Handle id="left" type="source" position={Position.Left} />
+      <Handle id="left" type="target" position={Position.Left} />
+      <Handle id="right" type="source" position={Position.Right} />
+      <Handle id="right" type="target" position={Position.Right} />
+      <div className="flow-card__glow" />
+      <div className="er-table__header">
+        <span className="er-table__glyph">DB</span>
+        <span>{data.label}</span>
+        <span className="flow-live-dot" />
       </div>
-      <div style={{ padding: '6px 0' }}>
-        {data.columns.map((col) => (
-          <div key={col} style={{
-            padding: '3px 12px',
-            fontSize: '11px',
-            fontFamily: 'monospace',
-            color: 'var(--ifm-color-emphasis-700)',
-            borderBottom: '1px solid var(--ifm-color-emphasis-100)',
-          }}>
+      <div className="er-table__columns">
+        {data.columns.map((col, index) => (
+          <div
+            key={col}
+            className={`er-table__column ${index === 0 || col.includes('(FK)') ? 'is-key' : ''}`}
+          >
             {col}
           </div>
         ))}
@@ -98,6 +104,8 @@ function TableNode({ data }) {
 const nodeTypes = { tableNode: TableNode };
 
 export default function ERDiagram() {
+  const [activeTable, setActiveTable] = useState(null);
+
   const initialNodes = useMemo(() =>
     tables.map((t) => ({
       id: t.id,
@@ -111,21 +119,76 @@ export default function ERDiagram() {
       ...e,
       type: 'smoothstep',
       animated: true,
-      style: { stroke: '#94a3b8', strokeWidth: 2 },
-      markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' },
-      labelStyle: { fill: 'var(--ifm-color-emphasis-600)', fontSize: '11px', fontWeight: 600 },
+      interactionWidth: 28,
+      style: { stroke: '#14b8a6', strokeWidth: 2.5 },
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#14b8a6' },
+      labelBgPadding: [8, 4],
+      labelBgBorderRadius: 8,
+      labelBgStyle: { fill: 'var(--ifm-background-surface-color)', fillOpacity: 0.92 },
+      labelStyle: { fill: 'var(--ifm-color-emphasis-700)', fontSize: '11px', fontWeight: 800 },
     })), []);
 
-  const [nodes, , onNodesChange] = useNodesState(initialNodes);
-  const [edges_, , onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges_, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  const focusTable = useCallback((tableId) => {
+    setActiveTable(tableId);
+    const connected = new Set(
+      edges
+        .filter((edge) => edge.source === tableId || edge.target === tableId)
+        .flatMap((edge) => [edge.source, edge.target])
+    );
+
+    setNodes((currentNodes) =>
+      currentNodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          isActive: connected.has(node.id),
+          isDimmed: !connected.has(node.id),
+        },
+      }))
+    );
+
+    setEdges((currentEdges) =>
+      currentEdges.map((edge) => {
+        const isActive = edge.source === tableId || edge.target === tableId;
+        return {
+          ...edge,
+          animated: true,
+          style: {
+            ...edge.style,
+            stroke: isActive ? '#f97316' : '#94a3b8',
+            strokeWidth: isActive ? 4 : 1.5,
+            opacity: isActive ? 1 : 0.32,
+          },
+          markerEnd: { type: MarkerType.ArrowClosed, color: isActive ? '#f97316' : '#94a3b8' },
+        };
+      })
+    );
+  }, [setEdges, setNodes]);
+
+  const clearFocus = useCallback(() => {
+    setActiveTable(null);
+    setNodes((currentNodes) =>
+      currentNodes.map((node) => ({
+        ...node,
+        data: { ...node.data, isActive: false, isDimmed: false },
+      }))
+    );
+    setEdges(initialEdges);
+  }, [initialEdges, setEdges, setNodes]);
 
   return (
-    <div className="diagram-container" style={{ height: '600px' }}>
+    <div className="diagram-container live-diagram" style={{ height: '700px' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges_}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodeMouseEnter={(_, node) => focusTable(node.id)}
+        onNodeClick={(_, node) => focusTable(node.id)}
+        onPaneClick={clearFocus}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.2 }}
@@ -137,13 +200,15 @@ export default function ERDiagram() {
           nodeStrokeWidth={3}
           zoomable
           pannable
+          className="diagram-minimap"
           style={{ height: 100, width: 150 }}
         />
-        <Background gap={16} />
+        <Background gap={20} color="rgba(20, 184, 166, 0.25)" />
       </ReactFlow>
-      <p style={{ textAlign: 'center', fontSize: '12px', color: 'var(--ifm-color-emphasis-500)', marginTop: '8px' }}>
-        Interactive ER diagram — drag to pan, scroll to zoom, click tables to highlight connections
-      </p>
+      <div className="diagram-statusbar">
+        <span>{activeTable ? `Focused: ${activeTable}` : 'Live relational map'}</span>
+        <span>Drag tables · hover to isolate relationships · scroll to zoom</span>
+      </div>
     </div>
   );
 }

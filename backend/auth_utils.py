@@ -6,6 +6,7 @@ import jwt
 import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from starlette.concurrency import run_in_threadpool
 
 from logging_config import get_logger
 
@@ -14,12 +15,13 @@ logger = get_logger("payguard.auth")
 JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALGORITHM = os.environ.get("JWT_ALGORITHM", "HS256")
 JWT_EXPIRE_MINUTES = int(os.environ.get("JWT_EXPIRE_MINUTES", "10080"))
+BCRYPT_ROUNDS = int(os.environ.get("BCRYPT_ROUNDS", "10"))
 
 security = HTTPBearer(auto_error=False)
 
 
 def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(rounds=BCRYPT_ROUNDS)).decode("utf-8")
 
 
 def verify_password(password: str, hashed: str) -> bool:
@@ -27,6 +29,26 @@ def verify_password(password: str, hashed: str) -> bool:
         return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
     except Exception:
         return False
+
+
+def get_bcrypt_rounds(hashed: str) -> Optional[int]:
+    try:
+        return int(hashed.split("$")[2])
+    except Exception:
+        return None
+
+
+def should_rehash_password(hashed: str) -> bool:
+    rounds = get_bcrypt_rounds(hashed)
+    return rounds is not None and rounds != BCRYPT_ROUNDS
+
+
+async def hash_password_async(password: str) -> str:
+    return await run_in_threadpool(hash_password, password)
+
+
+async def verify_password_async(password: str, hashed: str) -> bool:
+    return await run_in_threadpool(verify_password, password, hashed)
 
 
 def create_access_token(user_id: str) -> str:

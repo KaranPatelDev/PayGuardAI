@@ -18,7 +18,7 @@ load_dotenv(ROOT_DIR / ".env")
 
 from logging_config import setup_logging, get_logger
 from middleware import RequestLoggingMiddleware, register_exception_handler
-from auth_utils import hash_password, verify_password, create_access_token, get_current_user_id, create_reset_token, decode_reset_token
+from auth_utils import hash_password, verify_password, hash_password_async, verify_password_async, should_rehash_password, create_access_token, get_current_user_id, create_reset_token, decode_reset_token
 from models import (
     UserRegister, UserLogin, UserPublic, TokenResponse,
     ForgotPasswordRequest, ResetPasswordRequest,
@@ -181,26 +181,65 @@ async def _user_to_public_dict(user_row) -> dict:
     }
 
 
+async def _rehash_user_password(user_id: str, password: str) -> None:
+    start = time.perf_counter()
+    try:
+        new_hash = await hash_password_async(password)
+        async with async_session() as session:
+            await session.execute(
+                update(User)
+                .where(User.id == user_id)
+                .values(password_hash=new_hash, updated_at=utcnow_iso())
+            )
+            await session.commit()
+        logger.info(
+            "Credential hash upgraded",
+            extra={
+                "event": "auth.password_hash.upgraded",
+                "user_id": user_id,
+                "duration_ms": round((time.perf_counter() - start) * 1000, 2),
+            },
+        )
+    except Exception as exc:
+        logger.warning(
+            f"Password hash upgrade failed: {exc}",
+            extra={
+                "event": "auth.password_hash.upgrade_failed",
+                "user_id": user_id,
+                "error_type": type(exc).__name__,
+                "error_message": str(exc),
+            },
+        )
+
+
 # ============== AUTH ==============
 @api.post("/auth/register", response_model=TokenResponse)
 async def register(payload: UserRegister):
+    total_start = time.perf_counter()
+    email = payload.email.lower()
     async with async_session() as session:
-        result = await session.execute(select(User).where(User.email == payload.email.lower()))
+        db_lookup_start = time.perf_counter()
+        result = await session.execute(select(User).where(User.email == email))
+        db_lookup_ms = round((time.perf_counter() - db_lookup_start) * 1000, 2)
         if result.scalar_one_or_none():
             logger.warning(
                 "Registration failed — email already registered",
-                extra={"event": "auth.register.duplicate", "email": payload.email.lower()},
+                extra={"event": "auth.register.duplicate", "email": email, "db_lookup_ms": db_lookup_ms},
             )
             raise HTTPException(status_code=400, detail="Email already registered")
         now = utcnow_iso()
         user_id = new_id()
+        hash_start = time.perf_counter()
+        password_hash = await hash_password_async(payload.password)
+        hash_ms = round((time.perf_counter() - hash_start) * 1000, 2)
         user = User(
-            id=user_id, full_name=payload.full_name, email=payload.email.lower(),
+            id=user_id, full_name=payload.full_name, email=email,
             phone=payload.phone or "", business_name=payload.business_name,
             business_type=payload.business_type or "", gst_number=payload.gst_number or "",
-            password_hash=hash_password(payload.password), created_at=now, updated_at=now,
+            password_hash=password_hash, created_at=now, updated_at=now,
         )
         session.add(user)
+        write_start = time.perf_counter()
         await session.flush()
         session.add(Settings(
             user_id=user_id, default_payment_terms=30, default_followup_tone="Professional",
@@ -208,29 +247,72 @@ async def register(payload: UserRegister):
             currency="INR", ai_provider="claude-sonnet-4-6", updated_at=now,
         ))
         await session.commit()
+        db_write_ms = round((time.perf_counter() - write_start) * 1000, 2)
+        token_start = time.perf_counter()
         token = create_access_token(user_id)
+        token_ms = round((time.perf_counter() - token_start) * 1000, 2)
+        total_ms = round((time.perf_counter() - total_start) * 1000, 2)
         logger.info(
             "User registered successfully",
-            extra={"event": "auth.register", "user_id": user_id, "email": payload.email.lower()},
+            extra={
+                "event": "auth.register",
+                "user_id": user_id,
+                "email": email,
+                "db_lookup_ms": db_lookup_ms,
+                "password_hash_ms": hash_ms,
+                "db_write_ms": db_write_ms,
+                "token_ms": token_ms,
+                "duration_ms": total_ms,
+            },
         )
         return {"access_token": token, "token_type": "bearer", "user": await _user_to_public_dict(user)}
 
 
 @api.post("/auth/login", response_model=TokenResponse)
 async def login(payload: UserLogin):
+    total_start = time.perf_counter()
+    email = payload.email.lower()
     async with async_session() as session:
-        result = await session.execute(select(User).where(User.email == payload.email.lower()))
+        db_lookup_start = time.perf_counter()
+        result = await session.execute(select(User).where(User.email == email))
+        db_lookup_ms = round((time.perf_counter() - db_lookup_start) * 1000, 2)
         user_row = result.scalar_one_or_none()
-        if not user_row or not verify_password(payload.password, user_row.password_hash):
+        verify_start = time.perf_counter()
+        password_ok = bool(user_row and await verify_password_async(payload.password, user_row.password_hash))
+        verify_ms = round((time.perf_counter() - verify_start) * 1000, 2)
+        if not user_row or not password_ok:
+            total_ms = round((time.perf_counter() - total_start) * 1000, 2)
             logger.warning(
                 "Login failed — invalid credentials",
-                extra={"event": "auth.login.failure", "email": payload.email.lower()},
+                extra={
+                    "event": "auth.login.failure",
+                    "email": email,
+                    "db_lookup_ms": db_lookup_ms,
+                    "password_verify_ms": verify_ms,
+                    "duration_ms": total_ms,
+                },
             )
             raise HTTPException(status_code=401, detail="Invalid email or password")
+        token_start = time.perf_counter()
         token = create_access_token(user_row.id)
+        token_ms = round((time.perf_counter() - token_start) * 1000, 2)
+        total_ms = round((time.perf_counter() - total_start) * 1000, 2)
+        hash_upgrade_queued = should_rehash_password(user_row.password_hash)
+        if hash_upgrade_queued:
+            import asyncio
+            asyncio.create_task(_rehash_user_password(user_row.id, payload.password))
         logger.info(
             "Login successful",
-            extra={"event": "auth.login.success", "user_id": user_row.id, "email": payload.email.lower()},
+            extra={
+                "event": "auth.login.success",
+                "user_id": user_row.id,
+                "email": email,
+                "db_lookup_ms": db_lookup_ms,
+                "password_verify_ms": verify_ms,
+                "token_ms": token_ms,
+                "duration_ms": total_ms,
+                "hash_upgrade_queued": hash_upgrade_queued,
+            },
         )
         return {"access_token": token, "token_type": "bearer", "user": await _user_to_public_dict(user_row)}
 

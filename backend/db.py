@@ -150,6 +150,8 @@ async def init_db():
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_email ON users (email)"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_settings_user_id ON settings (user_id)"))
         duration = round((time.time() - start) * 1000, 2)
         logger.info(
             "Database initialization completed",
