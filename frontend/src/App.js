@@ -17,10 +17,17 @@ import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
 import HowToUse from "@/pages/HowToUse";
+import Pricing from "@/pages/Pricing";
 
 const PublicHowToUse = () => (
   <div className="min-h-screen bg-[#F9FAFB]">
     <HowToUse />
+  </div>
+);
+
+const PublicPricing = () => (
+  <div className="min-h-screen bg-[#F9FAFB]">
+    <Pricing />
   </div>
 );
 
@@ -39,6 +46,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/how-to-use" element={<PublicHowToUse />} />
+            <Route path="/pricing" element={<PublicPricing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
@@ -52,6 +60,7 @@ function App() {
             <Route path="/app/cashflow" element={<Protected><Cashflow /></Protected>} />
             <Route path="/app/reports" element={<Protected><Reports /></Protected>} />
             <Route path="/app/how-to-use" element={<Protected><HowToUse /></Protected>} />
+            <Route path="/app/pricing" element={<Protected><Pricing /></Protected>} />
             <Route path="/app/settings" element={<Protected><Settings /></Protected>} />
             <Route path="/app/profile" element={<Protected><Profile /></Protected>} />
 

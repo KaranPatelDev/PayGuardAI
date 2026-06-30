@@ -1,7 +1,8 @@
-"""PayGuard AI - Main FastAPI application."""
+"""PayGuard AI - Main FastAPI application (PostgreSQL)."""
 import os
 import re
-import logging
+import json
+import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Optional, List
@@ -9,11 +10,14 @@ from typing import Optional, List
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, Query, UploadFile, File
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
+from sqlalchemy import select, update, delete, func, text, and_, or_, inspect as sa_inspect
+from sqlalchemy.ext.asyncio import AsyncSession
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
+from logging_config import setup_logging, get_logger
+from middleware import RequestLoggingMiddleware, register_exception_handler
 from auth_utils import hash_password, verify_password, create_access_token, get_current_user_id
 from models import (
     UserRegister, UserLogin, UserPublic, TokenResponse,
@@ -28,17 +32,18 @@ from ai_service import (
     generate_followup_ai, compute_risk_score, build_recovery_report, _format_inr,
     parse_invoice_file,
 )
-from seed import seed_demo_data
+from db import (
+    engine, async_session, init_db, close_db,
+    User, Customer, Invoice, Payment, Followup, Settings,
+)
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("payguard")
-
-mongo_url = os.environ["MONGO_URL"]
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ["DB_NAME"]]
+setup_logging()
+logger = get_logger("payguard.server")
 
 app = FastAPI(title="PayGuard AI")
 api = APIRouter(prefix="/api")
+
+register_exception_handler(app)
 
 
 # ============== HELPERS ==============
@@ -51,7 +56,6 @@ def _parse_date(s: str):
 
 
 def _calc_invoice_status(due_date: str, pending_amount: float, total_amount: float, current_status: Optional[str] = None) -> str:
-    """Auto-detect status based on dates + payments. Preserves manual states like Disputed/Escalated/Draft."""
     if current_status in ("Disputed", "Escalated", "Draft"):
         return current_status
     if pending_amount <= 0 and total_amount > 0:
@@ -80,8 +84,17 @@ def _overdue_days(due_date: str) -> int:
         return 0
 
 
+def _row_to_dict(row) -> dict:
+    if row is None:
+        return None
+    return {c.key: getattr(row, c.key) for c in sa_inspect(row).mapper.column_attrs}
+
+
+def _rows_to_dicts(rows) -> list:
+    return [_row_to_dict(r[0]) if hasattr(r, '__getitem__') and len(r) == 1 else _row_to_dict(r) for r in rows]
+
+
 def _count_broken_promises(followups: list, invoices: list) -> int:
-    """Count follow-ups where a payment promise was made but the invoice is still pending past the promised date."""
     today = _today()
     broken = 0
     for f in followups:
@@ -98,7 +111,6 @@ def _count_broken_promises(followups: list, invoices: list) -> int:
 
 
 def _compute_invoice_stats(invoices: list) -> dict:
-    """Compute aggregate stats from a list of invoice documents."""
     pending = sum(i.get("pending_amount", 0) for i in invoices)
     overdue_invoices = [i for i in invoices if i.get("pending_amount", 0) > 0 and _overdue_days(i.get("due_date", "")) > 0]
     overdue_count = len(overdue_invoices)
@@ -109,13 +121,24 @@ def _compute_invoice_stats(invoices: list) -> dict:
     return {"pending": pending, "overdue_count": overdue_count, "avg_delay": avg_delay}
 
 
-async def _refresh_customer_risk(user_id: str, customer_id: str):
-    """Recompute and persist customer risk based on invoices + followups."""
-    invoices = await db.invoices.find({"user_id": user_id, "customer_id": customer_id}, {"_id": 0}).to_list(1000)
-    followups = await db.followups.find({"user_id": user_id, "customer_id": customer_id}, {"_id": 0}).to_list(1000)
-    customer = await db.customers.find_one({"id": customer_id, "user_id": user_id}, {"_id": 0})
-    if not customer:
+async def _refresh_customer_risk(user_id: str, customer_id: str, session: AsyncSession):
+    result = await session.execute(
+        select(Invoice).where(Invoice.user_id == user_id, Invoice.customer_id == customer_id)
+    )
+    invoices = _rows_to_dicts(result.all())
+
+    result = await session.execute(
+        select(Followup).where(Followup.user_id == user_id, Followup.customer_id == customer_id)
+    )
+    followups = _rows_to_dicts(result.all())
+
+    result = await session.execute(
+        select(Customer).where(Customer.id == customer_id, Customer.user_id == user_id)
+    )
+    cust_row = result.scalar_one_or_none()
+    if not cust_row:
         return
+    customer = _row_to_dict(cust_row)
 
     stats = _compute_invoice_stats(invoices)
     broken_promises = _count_broken_promises(followups, invoices)
@@ -132,78 +155,92 @@ async def _refresh_customer_risk(user_id: str, customer_id: str):
         "credit_limit": customer.get("credit_limit", 0),
     })
 
-    await db.customers.update_one(
-        {"id": customer_id, "user_id": user_id},
-        {"$set": {**risk, "updated_at": utcnow_iso()}},
+    await session.execute(
+        update(Customer)
+        .where(Customer.id == customer_id, Customer.user_id == user_id)
+        .values(**risk, updated_at=utcnow_iso())
     )
+    await session.commit()
     return {**risk, "broken_promises": broken_promises, "total_pending": stats["pending"]}
 
 
-async def _user_to_public(user_doc: dict) -> dict:
+async def _user_to_public_dict(user_row) -> dict:
+    d = _row_to_dict(user_row)
     return {
-        "id": user_doc["id"],
-        "full_name": user_doc["full_name"],
-        "email": user_doc["email"],
-        "phone": user_doc.get("phone", ""),
-        "business_name": user_doc["business_name"],
-        "business_type": user_doc.get("business_type", ""),
-        "gst_number": user_doc.get("gst_number", ""),
-        "created_at": user_doc["created_at"],
-        "updated_at": user_doc["updated_at"],
+        "id": d["id"],
+        "full_name": d["full_name"],
+        "email": d["email"],
+        "phone": d.get("phone", ""),
+        "business_name": d["business_name"],
+        "business_type": d.get("business_type", ""),
+        "gst_number": d.get("gst_number", ""),
+        "created_at": d["created_at"],
+        "updated_at": d["updated_at"],
     }
 
 
 # ============== AUTH ==============
 @api.post("/auth/register", response_model=TokenResponse)
 async def register(payload: UserRegister):
-    existing = await db.users.find_one({"email": payload.email.lower()}, {"_id": 0})
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    now = utcnow_iso()
-    user_id = new_id()
-    user = {
-        "id": user_id,
-        "full_name": payload.full_name,
-        "email": payload.email.lower(),
-        "phone": payload.phone or "",
-        "business_name": payload.business_name,
-        "business_type": payload.business_type or "",
-        "gst_number": payload.gst_number or "",
-        "password_hash": hash_password(payload.password),
-        "created_at": now,
-        "updated_at": now,
-    }
-    await db.users.insert_one(user)
-    # default settings
-    await db.settings.insert_one({
-        "user_id": user_id,
-        "default_payment_terms": 30,
-        "default_followup_tone": "Professional",
-        "default_reminder_days": [-3, 0, 3, 7, 15, 30],
-        "reminder_channels": ["WhatsApp", "Email"],
-        "currency": "INR",
-        "ai_provider": "claude-sonnet-4-6",
-        "updated_at": now,
-    })
-    token = create_access_token(user_id)
-    return {"access_token": token, "token_type": "bearer", "user": await _user_to_public(user)}
+    async with async_session() as session:
+        result = await session.execute(select(User).where(User.email == payload.email.lower()))
+        if result.scalar_one_or_none():
+            logger.warning(
+                "Registration failed — email already registered",
+                extra={"event": "auth.register.duplicate", "email": payload.email.lower()},
+            )
+            raise HTTPException(status_code=400, detail="Email already registered")
+        now = utcnow_iso()
+        user_id = new_id()
+        user = User(
+            id=user_id, full_name=payload.full_name, email=payload.email.lower(),
+            phone=payload.phone or "", business_name=payload.business_name,
+            business_type=payload.business_type or "", gst_number=payload.gst_number or "",
+            password_hash=hash_password(payload.password), created_at=now, updated_at=now,
+        )
+        session.add(user)
+        await session.flush()
+        session.add(Settings(
+            user_id=user_id, default_payment_terms=30, default_followup_tone="Professional",
+            default_reminder_days="[-3, 0, 3, 7, 15, 30]", reminder_channels='["WhatsApp", "Email"]',
+            currency="INR", ai_provider="claude-sonnet-4-6", updated_at=now,
+        ))
+        await session.commit()
+        token = create_access_token(user_id)
+        logger.info(
+            "User registered successfully",
+            extra={"event": "auth.register", "user_id": user_id, "email": payload.email.lower()},
+        )
+        return {"access_token": token, "token_type": "bearer", "user": await _user_to_public_dict(user)}
 
 
 @api.post("/auth/login", response_model=TokenResponse)
 async def login(payload: UserLogin):
-    user = await db.users.find_one({"email": payload.email.lower()}, {"_id": 0})
-    if not user or not verify_password(payload.password, user["password_hash"]):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    token = create_access_token(user["id"])
-    return {"access_token": token, "token_type": "bearer", "user": await _user_to_public(user)}
+    async with async_session() as session:
+        result = await session.execute(select(User).where(User.email == payload.email.lower()))
+        user_row = result.scalar_one_or_none()
+        if not user_row or not verify_password(payload.password, user_row.password_hash):
+            logger.warning(
+                "Login failed — invalid credentials",
+                extra={"event": "auth.login.failure", "email": payload.email.lower()},
+            )
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        token = create_access_token(user_row.id)
+        logger.info(
+            "Login successful",
+            extra={"event": "auth.login.success", "user_id": user_row.id, "email": payload.email.lower()},
+        )
+        return {"access_token": token, "token_type": "bearer", "user": await _user_to_public_dict(user_row)}
 
 
 @api.get("/auth/me", response_model=UserPublic)
 async def me(user_id: str = Depends(get_current_user_id)):
-    user = await db.users.find_one({"id": user_id}, {"_id": 0})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return await _user_to_public(user)
+    async with async_session() as session:
+        result = await session.execute(select(User).where(User.id == user_id))
+        user_row = result.scalar_one_or_none()
+        if not user_row:
+            raise HTTPException(status_code=404, detail="User not found")
+        return await _user_to_public_dict(user_row)
 
 
 # ============== CUSTOMERS ==============
@@ -213,109 +250,137 @@ async def list_customers(
     search: Optional[str] = None,
     risk: Optional[str] = None,
 ):
-    query = {"user_id": user_id}
-    if search:
-        query["business_name"] = {"$regex": search, "$options": "i"}
-    if risk and risk != "All":
-        query["risk_category"] = risk
-    items = await db.customers.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
-    # attach quick stats
-    for c in items:
-        invs = await db.invoices.find({"user_id": user_id, "customer_id": c["id"]}, {"_id": 0}).to_list(1000)
-        c["total_invoiced"] = sum(i.get("total_amount", 0) for i in invs)
-        c["total_pending"] = sum(i.get("pending_amount", 0) for i in invs)
-        c["invoice_count"] = len(invs)
-    return items
+    async with async_session() as session:
+        q = select(Customer).where(Customer.user_id == user_id)
+        if search:
+            q = q.where(Customer.business_name.ilike(f"%{search}%"))
+        if risk and risk != "All":
+            q = q.where(Customer.risk_category == risk)
+        q = q.order_by(Customer.created_at.desc())
+        result = await session.execute(q)
+        items = _rows_to_dicts(result.all())
+
+        for c in items:
+            inv_result = await session.execute(
+                select(Invoice).where(Invoice.user_id == user_id, Invoice.customer_id == c["id"])
+            )
+            invs = _rows_to_dicts(inv_result.all())
+            c["total_invoiced"] = sum(i.get("total_amount", 0) for i in invs)
+            c["total_pending"] = sum(i.get("pending_amount", 0) for i in invs)
+            c["invoice_count"] = len(invs)
+        return items
 
 
 @api.post("/customers")
 async def create_customer(payload: CustomerCreate, user_id: str = Depends(get_current_user_id)):
-    now = utcnow_iso()
-    doc = {
-        "id": new_id(), "user_id": user_id, **payload.model_dump(),
-        "risk_score": 0, "risk_category": "Low Risk",
-        "risk_reason": "New customer, no payment history yet.",
-        "risk_action": "Maintain standard credit terms and monitor first transactions.",
-        "created_at": now, "updated_at": now,
-    }
-    await db.customers.insert_one(doc)
-    doc.pop("_id", None)
-    return doc
+    async with async_session() as session:
+        now = utcnow_iso()
+        doc = Customer(
+            id=new_id(), user_id=user_id, **payload.model_dump(),
+            risk_score=0, risk_category="Low Risk",
+            risk_reason="New customer, no payment history yet.",
+            risk_action="Maintain standard credit terms and monitor first transactions.",
+            created_at=now, updated_at=now,
+        )
+        session.add(doc)
+        await session.commit()
+        logger.info(
+            "Customer created",
+            extra={"event": "db.customer.create", "user_id": user_id, "customer_id": doc.id, "business_name": payload.business_name},
+        )
+        return _row_to_dict(doc)
 
 
 @api.get("/customers/{cid}")
 async def get_customer(cid: str, user_id: str = Depends(get_current_user_id)):
-    c = await db.customers.find_one({"id": cid, "user_id": user_id}, {"_id": 0})
-    if not c:
-        raise HTTPException(status_code=404, detail="Customer not found")
-    invoices = await db.invoices.find({"user_id": user_id, "customer_id": cid}, {"_id": 0}).sort("invoice_date", -1).to_list(1000)
-    payments = await db.payments.find({"user_id": user_id, "customer_id": cid}, {"_id": 0}).sort("payment_date", -1).to_list(1000)
-    followups = await db.followups.find({"user_id": user_id, "customer_id": cid}, {"_id": 0}).sort("created_at", -1).to_list(1000)
-    c["invoices"] = invoices
-    c["payments"] = payments
-    c["followups"] = followups
-    c["total_pending"] = sum(i.get("pending_amount", 0) for i in invoices)
-    c["total_invoiced"] = sum(i.get("total_amount", 0) for i in invoices)
-    return c
+    async with async_session() as session:
+        result = await session.execute(
+            select(Customer).where(Customer.id == cid, Customer.user_id == user_id)
+        )
+        c = result.scalar_one_or_none()
+        if not c:
+            raise HTTPException(status_code=404, detail="Customer not found")
+
+        inv_result = await session.execute(
+            select(Invoice).where(Invoice.user_id == user_id, Invoice.customer_id == cid).order_by(Invoice.invoice_date.desc())
+        )
+        invoices = _rows_to_dicts(inv_result.all())
+
+        pay_result = await session.execute(
+            select(Payment).where(Payment.user_id == user_id, Payment.customer_id == cid).order_by(Payment.payment_date.desc())
+        )
+        payments = _rows_to_dicts(pay_result.all())
+
+        fu_result = await session.execute(
+            select(Followup).where(Followup.user_id == user_id, Followup.customer_id == cid).order_by(Followup.created_at.desc())
+        )
+        followups = _rows_to_dicts(fu_result.all())
+
+        cd = _row_to_dict(c)
+        cd["invoices"] = invoices
+        cd["payments"] = payments
+        cd["followups"] = followups
+        cd["total_pending"] = sum(i.get("pending_amount", 0) for i in invoices)
+        cd["total_invoiced"] = sum(i.get("total_amount", 0) for i in invoices)
+        return cd
 
 
 @api.put("/customers/{cid}")
 async def update_customer(cid: str, payload: CustomerUpdate, user_id: str = Depends(get_current_user_id)):
-    existing = await db.customers.find_one({"id": cid, "user_id": user_id}, {"_id": 0})
-    if not existing:
-        raise HTTPException(status_code=404, detail="Customer not found")
-    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
-    updates["updated_at"] = utcnow_iso()
-    await db.customers.update_one({"id": cid, "user_id": user_id}, {"$set": updates})
-    return await db.customers.find_one({"id": cid, "user_id": user_id}, {"_id": 0})
+    async with async_session() as session:
+        result = await session.execute(
+            select(Customer).where(Customer.id == cid, Customer.user_id == user_id)
+        )
+        if not result.scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="Customer not found")
+        updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+        updates["updated_at"] = utcnow_iso()
+        await session.execute(
+            update(Customer).where(Customer.id == cid, Customer.user_id == user_id).values(**updates)
+        )
+        await session.commit()
+        logger.info(
+            "Customer updated",
+            extra={"event": "db.customer.update", "user_id": user_id, "customer_id": cid},
+        )
+        result = await session.execute(
+            select(Customer).where(Customer.id == cid, Customer.user_id == user_id)
+        )
+        return _row_to_dict(result.scalar_one())
 
 
 @api.delete("/customers/{cid}")
 async def delete_customer(cid: str, user_id: str = Depends(get_current_user_id)):
-    res = await db.customers.delete_one({"id": cid, "user_id": user_id})
-    if res.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Customer not found")
-    # cascade
-    await db.invoices.delete_many({"user_id": user_id, "customer_id": cid})
-    await db.payments.delete_many({"user_id": user_id, "customer_id": cid})
-    await db.followups.delete_many({"user_id": user_id, "customer_id": cid})
-    return {"ok": True}
+    async with async_session() as session:
+        result = await session.execute(
+            delete(Customer).where(Customer.id == cid, Customer.user_id == user_id).returning(Customer.id)
+        )
+        if not result.scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="Customer not found")
+        await session.execute(delete(Invoice).where(Invoice.user_id == user_id, Invoice.customer_id == cid))
+        await session.execute(delete(Payment).where(Payment.user_id == user_id, Payment.customer_id == cid))
+        await session.execute(delete(Followup).where(Followup.user_id == user_id, Followup.customer_id == cid))
+        await session.commit()
+        logger.info(
+            "Customer deleted",
+            extra={"event": "db.customer.delete", "user_id": user_id, "customer_id": cid},
+        )
+        return {"ok": True}
 
 
 @api.get("/customers/{cid}/risk")
 async def customer_risk(cid: str, user_id: str = Depends(get_current_user_id)):
-    c = await db.customers.find_one({"id": cid, "user_id": user_id}, {"_id": 0})
-    if not c:
-        raise HTTPException(status_code=404, detail="Customer not found")
-    risk = await _refresh_customer_risk(user_id, cid)
-    return risk or {"risk_score": 0, "risk_category": "Low Risk"}
+    async with async_session() as session:
+        result = await session.execute(
+            select(Customer).where(Customer.id == cid, Customer.user_id == user_id)
+        )
+        if not result.scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="Customer not found")
+        risk = await _refresh_customer_risk(user_id, cid, session)
+        return risk or {"risk_score": 0, "risk_category": "Low Risk"}
 
 
 # ============== INVOICES ==============
-def _build_invoice_query(user_id: str, status_filter: Optional[str], customer_id: Optional[str], search: Optional[str]) -> dict:
-    """Build a MongoDB query dict for listing invoices."""
-    query = {"user_id": user_id}
-    if status_filter and status_filter != "All":
-        query["status"] = status_filter
-    if customer_id:
-        query["customer_id"] = customer_id
-    if search:
-        query["invoice_number"] = {"$regex": search, "$options": "i"}
-    return query
-
-
-def _enrich_invoices_with_customer(invoices: list, customer_map: dict) -> None:
-    """Add customer_name, customer_risk, overdue_days, and auto-update status on each invoice."""
-    for inv in invoices:
-        new_status = _calc_invoice_status(inv["due_date"], inv.get("pending_amount", 0), inv.get("total_amount", 0), inv.get("status"))
-        if new_status != inv.get("status"):
-            inv["status"] = new_status
-        inv["overdue_days"] = max(0, _overdue_days(inv["due_date"])) if inv.get("pending_amount", 0) > 0 else 0
-        c = customer_map.get(inv["customer_id"])
-        inv["customer_name"] = c["business_name"] if c else ""
-        inv["customer_risk"] = c.get("risk_category", "Low Risk") if c else "Low Risk"
-
-
 @api.get("/invoices")
 async def list_invoices(
     user_id: str = Depends(get_current_user_id),
@@ -323,238 +388,413 @@ async def list_invoices(
     customer_id: Optional[str] = None,
     search: Optional[str] = None,
 ):
-    query = _build_invoice_query(user_id, status_filter, customer_id, search)
-    items = await db.invoices.find(query, {"_id": 0}).sort("due_date", 1).to_list(2000)
+    async with async_session() as session:
+        q = select(Invoice).where(Invoice.user_id == user_id)
+        if status_filter and status_filter != "All":
+            q = q.where(Invoice.status == status_filter)
+        if customer_id:
+            q = q.where(Invoice.customer_id == customer_id)
+        if search:
+            q = q.where(Invoice.invoice_number.ilike(f"%{search}%"))
+        q = q.order_by(Invoice.due_date.asc())
+        result = await session.execute(q)
+        items = _rows_to_dicts(result.all())
 
-    cust_ids = list({i["customer_id"] for i in items})
-    customer_map = {}
-    if cust_ids:
-        custs = await db.customers.find({"id": {"$in": cust_ids}, "user_id": user_id}, {"_id": 0}).to_list(1000)
-        customer_map = {c["id"]: c for c in custs}
+        cust_ids = list({i["customer_id"] for i in items})
+        customer_map = {}
+        if cust_ids:
+            cust_result = await session.execute(
+                select(Customer).where(Customer.id.in_(cust_ids), Customer.user_id == user_id)
+            )
+            customer_map = {c[0].id: _row_to_dict(c[0]) for c in cust_result.all()}
 
-    _enrich_invoices_with_customer(items, customer_map)
+        for inv in items:
+            inv["_original_status"] = inv["status"]
+            new_status = _calc_invoice_status(inv["due_date"], inv.get("pending_amount", 0), inv.get("total_amount", 0), inv.get("status"))
+            if new_status != inv.get("status"):
+                inv["status"] = new_status
+            inv["overdue_days"] = max(0, _overdue_days(inv["due_date"])) if inv.get("pending_amount", 0) > 0 else 0
+            c = customer_map.get(inv["customer_id"])
+            inv["customer_name"] = c["business_name"] if c else ""
+            inv["customer_risk"] = c.get("risk_category", "Low Risk") if c else "Low Risk"
 
-    # Persist any auto-updated statuses
-    for inv in items:
-        if inv.get("status") != inv.get("_original_status"):
-            await db.invoices.update_one({"id": inv["id"], "user_id": user_id}, {"$set": {"status": inv["status"], "updated_at": utcnow_iso()}})
-
-    return items
+        for inv in items:
+            if inv.get("status") != inv.get("_original_status"):
+                await session.execute(
+                    update(Invoice).where(Invoice.id == inv["id"], Invoice.user_id == user_id)
+                    .values(status=inv["status"], updated_at=utcnow_iso())
+                )
+        await session.commit()
+        return items
 
 
 @api.post("/invoices")
 async def create_invoice(payload: InvoiceCreate, user_id: str = Depends(get_current_user_id)):
-    cust = await db.customers.find_one({"id": payload.customer_id, "user_id": user_id}, {"_id": 0})
-    if not cust:
-        raise HTTPException(status_code=400, detail="Customer not found")
-    total = payload.amount + payload.tax_amount
-    now = utcnow_iso()
-    inv_status = _calc_invoice_status(payload.due_date, total, total, None)
-    doc = {
-        "id": new_id(), "user_id": user_id,
-        **payload.model_dump(),
-        "total_amount": total, "paid_amount": 0, "pending_amount": total,
-        "status": inv_status, "file_url": "",
-        "created_at": now, "updated_at": now,
-    }
-    await db.invoices.insert_one(doc)
-    await _refresh_customer_risk(user_id, payload.customer_id)
-    doc.pop("_id", None)
-    return doc
+    async with async_session() as session:
+        result = await session.execute(
+            select(Customer).where(Customer.id == payload.customer_id, Customer.user_id == user_id)
+        )
+        if not result.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Customer not found")
+        total = payload.amount + payload.tax_amount
+        now = utcnow_iso()
+        inv_status = _calc_invoice_status(payload.due_date, total, total, None)
+        doc = Invoice(
+            id=new_id(), user_id=user_id, **payload.model_dump(),
+            total_amount=total, paid_amount=0, pending_amount=total,
+            status=inv_status, file_url="", created_at=now, updated_at=now,
+        )
+        session.add(doc)
+        await session.commit()
+        await _refresh_customer_risk(user_id, payload.customer_id, session)
+        logger.info(
+            "Invoice created",
+            extra={
+                "event": "db.invoice.create",
+                "user_id": user_id,
+                "invoice_id": doc.id,
+                "invoice_number": payload.invoice_number,
+                "customer_id": payload.customer_id,
+                "total_amount": total,
+            },
+        )
+        return _row_to_dict(doc)
 
 
 @api.get("/invoices/{iid}")
 async def get_invoice(iid: str, user_id: str = Depends(get_current_user_id)):
-    inv = await db.invoices.find_one({"id": iid, "user_id": user_id}, {"_id": 0})
-    if not inv:
-        raise HTTPException(status_code=404, detail="Invoice not found")
-    cust = await db.customers.find_one({"id": inv["customer_id"], "user_id": user_id}, {"_id": 0})
-    payments = await db.payments.find({"user_id": user_id, "invoice_id": iid}, {"_id": 0}).sort("payment_date", -1).to_list(500)
-    followups = await db.followups.find({"user_id": user_id, "invoice_id": iid}, {"_id": 0}).sort("created_at", -1).to_list(500)
-    new_status = _calc_invoice_status(inv["due_date"], inv.get("pending_amount", 0), inv.get("total_amount", 0), inv.get("status"))
-    inv["status"] = new_status
-    inv["overdue_days"] = max(0, _overdue_days(inv["due_date"])) if inv.get("pending_amount", 0) > 0 else 0
-    inv["customer"] = cust
-    inv["payments"] = payments
-    inv["followups"] = followups
-    return inv
+    async with async_session() as session:
+        result = await session.execute(
+            select(Invoice).where(Invoice.id == iid, Invoice.user_id == user_id)
+        )
+        inv = result.scalar_one_or_none()
+        if not inv:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+        inv_d = _row_to_dict(inv)
+
+        cust_result = await session.execute(
+            select(Customer).where(Customer.id == inv_d["customer_id"], Customer.user_id == user_id)
+        )
+        cust = cust_result.scalar_one_or_none()
+
+        pay_result = await session.execute(
+            select(Payment).where(Payment.user_id == user_id, Payment.invoice_id == iid).order_by(Payment.payment_date.desc())
+        )
+        payments = _rows_to_dicts(pay_result.all())
+
+        fu_result = await session.execute(
+            select(Followup).where(Followup.user_id == user_id, Followup.invoice_id == iid).order_by(Followup.created_at.desc())
+        )
+        followups = _rows_to_dicts(fu_result.all())
+
+        new_status = _calc_invoice_status(inv_d["due_date"], inv_d.get("pending_amount", 0), inv_d.get("total_amount", 0), inv_d.get("status"))
+        inv_d["status"] = new_status
+        inv_d["overdue_days"] = max(0, _overdue_days(inv_d["due_date"])) if inv_d.get("pending_amount", 0) > 0 else 0
+        inv_d["customer"] = _row_to_dict(cust) if cust else None
+        inv_d["payments"] = payments
+        inv_d["followups"] = followups
+        return inv_d
 
 
 @api.put("/invoices/{iid}")
 async def update_invoice(iid: str, payload: InvoiceUpdate, user_id: str = Depends(get_current_user_id)):
-    existing = await db.invoices.find_one({"id": iid, "user_id": user_id}, {"_id": 0})
-    if not existing:
-        raise HTTPException(status_code=404, detail="Invoice not found")
-    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
-    if "amount" in updates or "tax_amount" in updates:
-        amt = updates.get("amount", existing["amount"])
-        tax = updates.get("tax_amount", existing["tax_amount"])
-        updates["total_amount"] = amt + tax
-        updates["pending_amount"] = max(0, updates["total_amount"] - existing.get("paid_amount", 0))
-    updates["updated_at"] = utcnow_iso()
-    new_doc = {**existing, **updates}
-    updates["status"] = _calc_invoice_status(new_doc["due_date"], new_doc.get("pending_amount", 0), new_doc.get("total_amount", 0), updates.get("status") or existing.get("status"))
-    await db.invoices.update_one({"id": iid, "user_id": user_id}, {"$set": updates})
-    await _refresh_customer_risk(user_id, existing["customer_id"])
-    return await db.invoices.find_one({"id": iid, "user_id": user_id}, {"_id": 0})
+    async with async_session() as session:
+        result = await session.execute(
+            select(Invoice).where(Invoice.id == iid, Invoice.user_id == user_id)
+        )
+        existing = result.scalar_one_or_none()
+        if not existing:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+        existing_d = _row_to_dict(existing)
+        updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+        if "amount" in updates or "tax_amount" in updates:
+            amt = updates.get("amount", existing_d["amount"])
+            tax = updates.get("tax_amount", existing_d["tax_amount"])
+            updates["total_amount"] = amt + tax
+            updates["pending_amount"] = max(0, updates["total_amount"] - existing_d.get("paid_amount", 0))
+        updates["updated_at"] = utcnow_iso()
+        new_doc = {**existing_d, **updates}
+        updates["status"] = _calc_invoice_status(new_doc["due_date"], new_doc.get("pending_amount", 0), new_doc.get("total_amount", 0), updates.get("status") or existing_d.get("status"))
+        await session.execute(
+            update(Invoice).where(Invoice.id == iid, Invoice.user_id == user_id).values(**updates)
+        )
+        await session.commit()
+        await _refresh_customer_risk(user_id, existing_d["customer_id"], session)
+        logger.info(
+            "Invoice updated",
+            extra={"event": "db.invoice.update", "user_id": user_id, "invoice_id": iid},
+        )
+        result = await session.execute(
+            select(Invoice).where(Invoice.id == iid, Invoice.user_id == user_id)
+        )
+        return _row_to_dict(result.scalar_one())
 
 
 @api.delete("/invoices/{iid}")
 async def delete_invoice(iid: str, user_id: str = Depends(get_current_user_id)):
-    inv = await db.invoices.find_one({"id": iid, "user_id": user_id}, {"_id": 0})
-    if not inv:
-        raise HTTPException(status_code=404, detail="Invoice not found")
-    await db.invoices.delete_one({"id": iid, "user_id": user_id})
-    await db.payments.delete_many({"user_id": user_id, "invoice_id": iid})
-    await db.followups.delete_many({"user_id": user_id, "invoice_id": iid})
-    await _refresh_customer_risk(user_id, inv["customer_id"])
-    return {"ok": True}
+    async with async_session() as session:
+        result = await session.execute(
+            select(Invoice).where(Invoice.id == iid, Invoice.user_id == user_id)
+        )
+        inv = result.scalar_one_or_none()
+        if not inv:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+        customer_id = inv.customer_id
+        await session.execute(delete(Invoice).where(Invoice.id == iid, Invoice.user_id == user_id))
+        await session.execute(delete(Payment).where(Payment.user_id == user_id, Payment.invoice_id == iid))
+        await session.execute(delete(Followup).where(Followup.user_id == user_id, Followup.invoice_id == iid))
+        await session.commit()
+        await _refresh_customer_risk(user_id, customer_id, session)
+        logger.info(
+            "Invoice deleted",
+            extra={"event": "db.invoice.delete", "user_id": user_id, "invoice_id": iid},
+        )
+        return {"ok": True}
 
 
 @api.post("/invoices/{iid}/mark-paid")
 async def mark_paid(iid: str, user_id: str = Depends(get_current_user_id)):
-    inv = await db.invoices.find_one({"id": iid, "user_id": user_id}, {"_id": 0})
-    if not inv:
-        raise HTTPException(status_code=404, detail="Invoice not found")
-    pending = inv.get("pending_amount", 0)
-    if pending > 0:
-        await db.payments.insert_one({
-            "id": new_id(), "invoice_id": iid, "customer_id": inv["customer_id"],
-            "user_id": user_id, "amount": pending,
-            "payment_date": _today().isoformat(),
-            "payment_mode": "Manual", "reference_number": "",
-            "notes": "Marked as paid", "created_at": utcnow_iso(),
-        })
-    await db.invoices.update_one(
-        {"id": iid, "user_id": user_id},
-        {"$set": {"paid_amount": inv.get("total_amount", 0), "pending_amount": 0, "status": "Paid", "updated_at": utcnow_iso()}},
-    )
-    await _refresh_customer_risk(user_id, inv["customer_id"])
-    return await db.invoices.find_one({"id": iid, "user_id": user_id}, {"_id": 0})
+    async with async_session() as session:
+        result = await session.execute(
+            select(Invoice).where(Invoice.id == iid, Invoice.user_id == user_id)
+        )
+        inv = result.scalar_one_or_none()
+        if not inv:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+        inv_d = _row_to_dict(inv)
+        pending = inv_d.get("pending_amount", 0)
+        if pending > 0:
+            session.add(Payment(
+                id=new_id(), invoice_id=iid, customer_id=inv_d["customer_id"],
+                user_id=user_id, amount=pending, payment_date=_today().isoformat(),
+                payment_mode="Manual", reference_number="", notes="Marked as paid",
+                created_at=utcnow_iso(),
+            ))
+        await session.execute(
+            update(Invoice).where(Invoice.id == iid, Invoice.user_id == user_id)
+            .values(paid_amount=inv_d.get("total_amount", 0), pending_amount=0, status="Paid", updated_at=utcnow_iso())
+        )
+        await session.commit()
+        await _refresh_customer_risk(user_id, inv_d["customer_id"], session)
+        logger.info(
+            "Invoice marked as paid",
+            extra={
+                "event": "invoice.marked_paid",
+                "user_id": user_id,
+                "invoice_id": iid,
+                "pending_amount": pending,
+            },
+        )
+        result = await session.execute(
+            select(Invoice).where(Invoice.id == iid, Invoice.user_id == user_id)
+        )
+        return _row_to_dict(result.scalar_one())
 
 
 @api.get("/invoices/{iid}/timeline")
 async def invoice_timeline(iid: str, user_id: str = Depends(get_current_user_id)):
-    inv = await db.invoices.find_one({"id": iid, "user_id": user_id}, {"_id": 0})
-    if not inv:
-        raise HTTPException(status_code=404, detail="Invoice not found")
-    due = datetime.fromisoformat(inv["due_date"]).date()
-    today = _today()
-    steps = [
-        (-3, "Gentle reminder", "Send a friendly heads-up before the due date."),
-        (0, "Due date reminder", "Confirm the payment is being processed."),
-        (3, "First overdue reminder", "Politely follow up on the overdue payment."),
-        (7, "Strong reminder", "Increase urgency and request a payment commitment."),
-        (15, "Call script & escalation", "Make a direct call and consider escalation."),
-        (30, "Final warning", "Send final warning and prepare legal action notice."),
-    ]
-    followups = await db.followups.find({"user_id": user_id, "invoice_id": iid}, {"_id": 0}).to_list(500)
-    timeline = []
-    for offset, action, desc in steps:
-        action_date = due + timedelta(days=offset)
-        # match a followup on/near this date
-        completed = any(
-            abs((datetime.fromisoformat(f["created_at"][:10]).date() - action_date).days) <= 1 and
-            f.get("followup_type", "").lower().split()[0] in action.lower()
-            for f in followups
+    async with async_session() as session:
+        result = await session.execute(
+            select(Invoice).where(Invoice.id == iid, Invoice.user_id == user_id)
         )
-        status = "completed" if completed else ("due" if action_date <= today else "upcoming")
-        timeline.append({
-            "offset_days": offset,
-            "action": action,
-            "description": desc,
-            "date": action_date.isoformat(),
-            "status": status,
-        })
-    return {"invoice_id": iid, "due_date": inv["due_date"], "timeline": timeline}
+        inv = result.scalar_one_or_none()
+        if not inv:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+        inv_d = _row_to_dict(inv)
+        due = datetime.fromisoformat(inv_d["due_date"]).date()
+        today = _today()
+        steps = [
+            (-3, "Gentle reminder", "Send a friendly heads-up before the due date."),
+            (0, "Due date reminder", "Confirm the payment is being processed."),
+            (3, "First overdue reminder", "Politely follow up on the overdue payment."),
+            (7, "Strong reminder", "Increase urgency and request a payment commitment."),
+            (15, "Call script & escalation", "Make a direct call and consider escalation."),
+            (30, "Final warning", "Send final warning and prepare legal action notice."),
+        ]
+        fu_result = await session.execute(
+            select(Followup).where(Followup.user_id == user_id, Followup.invoice_id == iid)
+        )
+        followups = _rows_to_dicts(fu_result.all())
+        timeline = []
+        for offset, action, desc in steps:
+            action_date = due + timedelta(days=offset)
+            completed = any(
+                abs((datetime.fromisoformat(f["created_at"][:10]).date() - action_date).days) <= 1 and
+                f.get("followup_type", "").lower().split()[0] in action.lower()
+                for f in followups
+            )
+            status = "completed" if completed else ("due" if action_date <= today else "upcoming")
+            timeline.append({
+                "offset_days": offset, "action": action, "description": desc,
+                "date": action_date.isoformat(), "status": status,
+            })
+        return {"invoice_id": iid, "due_date": inv_d["due_date"], "timeline": timeline}
 
 
 # ============== PAYMENTS ==============
 @api.get("/payments")
 async def list_payments(user_id: str = Depends(get_current_user_id)):
-    items = await db.payments.find({"user_id": user_id}, {"_id": 0}).sort("payment_date", -1).to_list(2000)
-    # enrich
-    inv_ids = list({p["invoice_id"] for p in items})
-    invs = await db.invoices.find({"id": {"$in": inv_ids}, "user_id": user_id}, {"_id": 0}).to_list(2000) if inv_ids else []
-    inv_map = {i["id"]: i for i in invs}
-    cust_ids = list({p["customer_id"] for p in items})
-    custs = await db.customers.find({"id": {"$in": cust_ids}, "user_id": user_id}, {"_id": 0}).to_list(2000) if cust_ids else []
-    cust_map = {c["id"]: c for c in custs}
-    for p in items:
-        p["invoice_number"] = inv_map.get(p["invoice_id"], {}).get("invoice_number", "")
-        p["customer_name"] = cust_map.get(p["customer_id"], {}).get("business_name", "")
-    return items
+    async with async_session() as session:
+        result = await session.execute(
+            select(Payment).where(Payment.user_id == user_id).order_by(Payment.payment_date.desc())
+        )
+        items = _rows_to_dicts(result.all())
+
+        inv_ids = list({p["invoice_id"] for p in items})
+        inv_map = {}
+        if inv_ids:
+            inv_result = await session.execute(
+                select(Invoice).where(Invoice.id.in_(inv_ids), Invoice.user_id == user_id)
+            )
+            inv_map = {i[0].id: _row_to_dict(i[0]) for i in inv_result.all()}
+
+        cust_ids = list({p["customer_id"] for p in items})
+        cust_map = {}
+        if cust_ids:
+            cust_result = await session.execute(
+                select(Customer).where(Customer.id.in_(cust_ids), Customer.user_id == user_id)
+            )
+            cust_map = {c[0].id: _row_to_dict(c[0]) for c in cust_result.all()}
+
+        for p in items:
+            p["invoice_number"] = inv_map.get(p["invoice_id"], {}).get("invoice_number", "")
+            p["customer_name"] = cust_map.get(p["customer_id"], {}).get("business_name", "")
+        return items
 
 
 @api.post("/payments")
 async def create_payment(payload: PaymentCreate, user_id: str = Depends(get_current_user_id)):
-    inv = await db.invoices.find_one({"id": payload.invoice_id, "user_id": user_id}, {"_id": 0})
-    if not inv:
-        raise HTTPException(status_code=404, detail="Invoice not found")
-    doc = {
-        "id": new_id(), "user_id": user_id, "customer_id": inv["customer_id"],
-        **payload.model_dump(), "created_at": utcnow_iso(),
-    }
-    await db.payments.insert_one(doc)
-    new_paid = inv.get("paid_amount", 0) + payload.amount
-    new_pending = max(0, inv.get("total_amount", 0) - new_paid)
-    new_status = _calc_invoice_status(inv["due_date"], new_pending, inv.get("total_amount", 0), inv.get("status"))
-    await db.invoices.update_one(
-        {"id": inv["id"], "user_id": user_id},
-        {"$set": {"paid_amount": new_paid, "pending_amount": new_pending, "status": new_status, "updated_at": utcnow_iso()}},
-    )
-    await _refresh_customer_risk(user_id, inv["customer_id"])
-    doc.pop("_id", None)
-    return doc
+    async with async_session() as session:
+        result = await session.execute(
+            select(Invoice).where(Invoice.id == payload.invoice_id, Invoice.user_id == user_id)
+        )
+        inv = result.scalar_one_or_none()
+        if not inv:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+        inv_d = _row_to_dict(inv)
+        now = utcnow_iso()
+        doc = Payment(
+            id=new_id(), user_id=user_id, customer_id=inv_d["customer_id"],
+            **payload.model_dump(), created_at=now,
+        )
+        session.add(doc)
+        new_paid = inv_d.get("paid_amount", 0) + payload.amount
+        new_pending = max(0, inv_d.get("total_amount", 0) - new_paid)
+        new_status = _calc_invoice_status(inv_d["due_date"], new_pending, inv_d.get("total_amount", 0), inv_d.get("status"))
+        await session.execute(
+            update(Invoice).where(Invoice.id == inv_d["id"], Invoice.user_id == user_id)
+            .values(paid_amount=new_paid, pending_amount=new_pending, status=new_status, updated_at=utcnow_iso())
+        )
+        await session.commit()
+        await _refresh_customer_risk(user_id, inv_d["customer_id"], session)
+        logger.info(
+            "Payment recorded",
+            extra={
+                "event": "db.payment.create",
+                "user_id": user_id,
+                "payment_id": doc.id,
+                "invoice_id": payload.invoice_id,
+                "amount": payload.amount,
+                "payment_mode": payload.payment_mode,
+            },
+        )
+        return _row_to_dict(doc)
 
 
 @api.get("/payments/invoice/{iid}")
 async def payments_for_invoice(iid: str, user_id: str = Depends(get_current_user_id)):
-    return await db.payments.find({"user_id": user_id, "invoice_id": iid}, {"_id": 0}).sort("payment_date", -1).to_list(500)
+    async with async_session() as session:
+        result = await session.execute(
+            select(Payment).where(Payment.user_id == user_id, Payment.invoice_id == iid).order_by(Payment.payment_date.desc())
+        )
+        return _rows_to_dicts(result.all())
 
 
 # ============== FOLLOW-UPS ==============
 @api.get("/followups")
 async def list_followups(user_id: str = Depends(get_current_user_id)):
-    items = await db.followups.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).to_list(2000)
-    return items
+    async with async_session() as session:
+        result = await session.execute(
+            select(Followup).where(Followup.user_id == user_id).order_by(Followup.created_at.desc())
+        )
+        return _rows_to_dicts(result.all())
 
 
 @api.post("/followups")
 async def create_followup(payload: FollowUpCreate, user_id: str = Depends(get_current_user_id)):
-    inv = await db.invoices.find_one({"id": payload.invoice_id, "user_id": user_id}, {"_id": 0})
-    if not inv:
-        raise HTTPException(status_code=404, detail="Invoice not found")
-    doc = {
-        "id": new_id(), "user_id": user_id, "customer_id": inv["customer_id"],
-        **payload.model_dump(), "created_at": utcnow_iso(),
-    }
-    await db.followups.insert_one(doc)
-    await _refresh_customer_risk(user_id, inv["customer_id"])
-    doc.pop("_id", None)
-    return doc
+    async with async_session() as session:
+        result = await session.execute(
+            select(Invoice).where(Invoice.id == payload.invoice_id, Invoice.user_id == user_id)
+        )
+        inv = result.scalar_one_or_none()
+        if not inv:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+        inv_d = _row_to_dict(inv)
+        doc = Followup(
+            id=new_id(), user_id=user_id, customer_id=inv_d["customer_id"],
+            **payload.model_dump(), created_at=utcnow_iso(),
+        )
+        session.add(doc)
+        await session.commit()
+        await _refresh_customer_risk(user_id, inv_d["customer_id"], session)
+        logger.info(
+            "Follow-up created",
+            extra={
+                "event": "db.followup.create",
+                "user_id": user_id,
+                "followup_id": doc.id,
+                "invoice_id": payload.invoice_id,
+                "followup_type": payload.followup_type,
+                "channel": payload.channel,
+            },
+        )
+        return _row_to_dict(doc)
 
 
 @api.get("/followups/invoice/{iid}")
 async def followups_for_invoice(iid: str, user_id: str = Depends(get_current_user_id)):
-    return await db.followups.find({"user_id": user_id, "invoice_id": iid}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    async with async_session() as session:
+        result = await session.execute(
+            select(Followup).where(Followup.user_id == user_id, Followup.invoice_id == iid).order_by(Followup.created_at.desc())
+        )
+        return _rows_to_dicts(result.all())
 
 
 @api.put("/followups/{fid}")
 async def update_followup(fid: str, payload: FollowUpUpdate, user_id: str = Depends(get_current_user_id)):
-    existing = await db.followups.find_one({"id": fid, "user_id": user_id}, {"_id": 0})
-    if not existing:
-        raise HTTPException(status_code=404, detail="Follow-up not found")
-    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
-    await db.followups.update_one({"id": fid, "user_id": user_id}, {"$set": updates})
-    await _refresh_customer_risk(user_id, existing["customer_id"])
-    return await db.followups.find_one({"id": fid, "user_id": user_id}, {"_id": 0})
+    async with async_session() as session:
+        result = await session.execute(
+            select(Followup).where(Followup.id == fid, Followup.user_id == user_id)
+        )
+        existing = result.scalar_one_or_none()
+        if not existing:
+            raise HTTPException(status_code=404, detail="Follow-up not found")
+        existing_d = _row_to_dict(existing)
+        updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+        if updates:
+            await session.execute(
+                update(Followup).where(Followup.id == fid, Followup.user_id == user_id).values(**updates)
+            )
+            await session.commit()
+            logger.info(
+                "Follow-up updated",
+                extra={
+                    "event": "db.followup.update",
+                    "user_id": user_id,
+                    "followup_id": fid,
+                    "updated_fields": list(updates.keys()),
+                },
+            )
+        await _refresh_customer_risk(user_id, existing_d["customer_id"], session)
+        result = await session.execute(
+            select(Followup).where(Followup.id == fid, Followup.user_id == user_id)
+        )
+        return _row_to_dict(result.scalar_one())
 
 
 # ============== AI ==============
 @api.post("/ai/parse-invoice")
 async def ai_parse_invoice(file: UploadFile = File(...), user_id: str = Depends(get_current_user_id)):
-    """Upload a PDF or image of an invoice; AI extracts fields for pre-filling the form."""
     allowed = {"application/pdf", "image/png", "image/jpeg", "image/jpg", "image/webp"}
     mime = file.content_type or "application/pdf"
     if mime not in allowed:
@@ -565,137 +805,217 @@ async def ai_parse_invoice(file: UploadFile = File(...), user_id: str = Depends(
     result = await parse_invoice_file(data, mime)
     if result.get("_error") and not result.get("invoice_number"):
         raise HTTPException(status_code=502, detail=f"OCR failed: {result.get('_error')}")
-    # Try to match customer_business_name to an existing customer
     name = (result.get("customer_business_name") or "").strip()
     if name:
-        cust = await db.customers.find_one(
-            {"user_id": user_id, "business_name": {"$regex": f"^{re.escape(name)}$", "$options": "i"}},
-            {"_id": 0},
-        )
-        if cust:
-            result["matched_customer_id"] = cust["id"]
+        async with async_session() as session:
+            cust_result = await session.execute(
+                select(Customer).where(
+                    Customer.user_id == user_id,
+                    Customer.business_name.ilike(name),
+                )
+            )
+            cust = cust_result.scalar_one_or_none()
+            if cust:
+                result["matched_customer_id"] = cust.id
     return result
 
 
 @api.post("/ai/generate-followup")
 async def ai_generate_followup(payload: AIFollowupRequest, user_id: str = Depends(get_current_user_id)):
-    inv = await db.invoices.find_one({"id": payload.invoice_id, "user_id": user_id}, {"_id": 0})
-    if not inv:
-        raise HTTPException(status_code=404, detail="Invoice not found")
-    cust = await db.customers.find_one({"id": inv["customer_id"], "user_id": user_id}, {"_id": 0})
-    user = await db.users.find_one({"id": user_id}, {"_id": 0})
-    prev_count = await db.followups.count_documents({"user_id": user_id, "invoice_id": payload.invoice_id})
-    result = await generate_followup_ai(
-        customer_name=cust["business_name"] if cust else "Customer",
-        invoice_number=inv["invoice_number"],
-        amount=inv.get("total_amount", inv["amount"]),
-        due_date=inv["due_date"],
-        overdue_days=_overdue_days(inv["due_date"]),
-        tone=payload.tone,
-        message_type=payload.message_type,
-        business_name=user.get("business_name", "Your Business") if user else "Your Business",
-        previous_followups=prev_count,
-        risk_category=cust.get("risk_category", "Low Risk") if cust else "Low Risk",
-    )
-    return result
+    async with async_session() as session:
+        result = await session.execute(
+            select(Invoice).where(Invoice.id == payload.invoice_id, Invoice.user_id == user_id)
+        )
+        inv = result.scalar_one_or_none()
+        if not inv:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+        inv_d = _row_to_dict(inv)
+
+        cust_result = await session.execute(
+            select(Customer).where(Customer.id == inv_d["customer_id"], Customer.user_id == user_id)
+        )
+        cust = cust_result.scalar_one_or_none()
+        cust_d = _row_to_dict(cust) if cust else {}
+
+        user_result = await session.execute(
+            select(User).where(User.id == user_id)
+        )
+        user = user_result.scalar_one_or_none()
+        user_d = _row_to_dict(user) if user else {}
+
+        count_result = await session.execute(
+            select(func.count()).select_from(Followup).where(Followup.user_id == user_id, Followup.invoice_id == payload.invoice_id)
+        )
+        prev_count = count_result.scalar() or 0
+
+        ai_result = await generate_followup_ai(
+            customer_name=cust_d.get("business_name", "Customer"),
+            invoice_number=inv_d["invoice_number"],
+            amount=inv_d.get("total_amount", inv_d["amount"]),
+            due_date=inv_d["due_date"],
+            overdue_days=_overdue_days(inv_d["due_date"]),
+            tone=payload.tone,
+            message_type=payload.message_type,
+            business_name=user_d.get("business_name", "Your Business"),
+            previous_followups=prev_count,
+            risk_category=cust_d.get("risk_category", "Low Risk"),
+        )
+        logger.info(
+            "Follow-up generation requested via API",
+            extra={
+                "event": "ai.generate_followup.request",
+                "user_id": user_id,
+                "invoice_id": payload.invoice_id,
+                "tone": payload.tone,
+                "message_type": payload.message_type,
+                "source": ai_result.get("_source", "unknown"),
+            },
+        )
+        return ai_result
 
 
 @api.post("/ai/generate-risk-summary")
 async def ai_risk_summary(payload: AIRiskRequest, user_id: str = Depends(get_current_user_id)):
-    cust = await db.customers.find_one({"id": payload.customer_id, "user_id": user_id}, {"_id": 0})
-    if not cust:
-        raise HTTPException(status_code=404, detail="Customer not found")
-    risk = await _refresh_customer_risk(user_id, payload.customer_id)
-    return {"customer": cust["business_name"], **(risk or {})}
+    async with async_session() as session:
+        result = await session.execute(
+            select(Customer).where(Customer.id == payload.customer_id, Customer.user_id == user_id)
+        )
+        cust = result.scalar_one_or_none()
+        if not cust:
+            raise HTTPException(status_code=404, detail="Customer not found")
+        risk = await _refresh_customer_risk(user_id, payload.customer_id, session)
+        return {"customer": cust.business_name, **(risk or {})}
 
 
 @api.post("/ai/generate-recovery-report")
 async def ai_recovery_report(payload: AIReportRequest, user_id: str = Depends(get_current_user_id)):
-    user = await db.users.find_one({"id": user_id}, {"_id": 0})
-    biz = user.get("business_name", "Your Business") if user else "Your Business"
-    if payload.customer_id:
-        cust = await db.customers.find_one({"id": payload.customer_id, "user_id": user_id}, {"_id": 0})
-        if not cust:
-            raise HTTPException(status_code=404, detail="Customer not found")
-        risk = await _refresh_customer_risk(user_id, payload.customer_id) or {}
-        invs = await db.invoices.find({"user_id": user_id, "customer_id": payload.customer_id, "pending_amount": {"$gt": 0}}, {"_id": 0}).to_list(500)
-        followups = await db.followups.find({"user_id": user_id, "customer_id": payload.customer_id}, {"_id": 0}).to_list(500)
-        for i in invs:
-            i["overdue_days"] = max(0, _overdue_days(i["due_date"]))
-        total_pending = sum(i["pending_amount"] for i in invs)
-        report = build_recovery_report(
-            customer_name=cust["business_name"],
-            invoice_summary=invs,
-            risk_info=risk,
-            business_name=biz,
-            total_pending=total_pending,
-            followup_count=len(followups),
-            broken_promises=risk.get("broken_promises", 0),
-        )
-        return {"report": report, "total_pending": total_pending, "risk": risk, "customer": cust}
-    elif payload.invoice_id:
-        inv = await db.invoices.find_one({"id": payload.invoice_id, "user_id": user_id}, {"_id": 0})
-        if not inv:
-            raise HTTPException(status_code=404, detail="Invoice not found")
-        cust = await db.customers.find_one({"id": inv["customer_id"], "user_id": user_id}, {"_id": 0})
-        risk = await _refresh_customer_risk(user_id, inv["customer_id"]) or {}
-        followups = await db.followups.find({"user_id": user_id, "invoice_id": payload.invoice_id}, {"_id": 0}).to_list(500)
-        inv["overdue_days"] = max(0, _overdue_days(inv["due_date"]))
-        report = build_recovery_report(
-            customer_name=cust["business_name"] if cust else "",
-            invoice_summary=[inv],
-            risk_info=risk,
-            business_name=biz,
-            total_pending=inv.get("pending_amount", 0),
-            followup_count=len(followups),
-            broken_promises=risk.get("broken_promises", 0),
-        )
-        return {"report": report, "invoice": inv, "risk": risk, "customer": cust}
+    async with async_session() as session:
+        user_result = await session.execute(select(User).where(User.id == user_id))
+        user = user_result.scalar_one_or_none()
+        biz = user.business_name if user else "Your Business"
+
+        if payload.customer_id:
+            cust_result = await session.execute(
+                select(Customer).where(Customer.id == payload.customer_id, Customer.user_id == user_id)
+            )
+            cust = cust_result.scalar_one_or_none()
+            if not cust:
+                raise HTTPException(status_code=404, detail="Customer not found")
+            risk = await _refresh_customer_risk(user_id, payload.customer_id, session) or {}
+
+            inv_result = await session.execute(
+                select(Invoice).where(
+                    Invoice.user_id == user_id, Invoice.customer_id == payload.customer_id,
+                    Invoice.pending_amount > 0
+                )
+            )
+            invs = _rows_to_dicts(inv_result.all())
+
+            fu_result = await session.execute(
+                select(Followup).where(Followup.user_id == user_id, Followup.customer_id == payload.customer_id)
+            )
+            followups = _rows_to_dicts(fu_result.all())
+
+            for i in invs:
+                i["overdue_days"] = max(0, _overdue_days(i["due_date"]))
+            total_pending = sum(i["pending_amount"] for i in invs)
+            report = build_recovery_report(
+                customer_name=cust.business_name, invoice_summary=invs, risk_info=risk,
+                business_name=biz, total_pending=total_pending,
+                followup_count=len(followups), broken_promises=risk.get("broken_promises", 0),
+            )
+            return {"report": report, "total_pending": total_pending, "risk": risk, "customer": _row_to_dict(cust)}
+
+        elif payload.invoice_id:
+            inv_result = await session.execute(
+                select(Invoice).where(Invoice.id == payload.invoice_id, Invoice.user_id == user_id)
+            )
+            inv = inv_result.scalar_one_or_none()
+            if not inv:
+                raise HTTPException(status_code=404, detail="Invoice not found")
+            inv_d = _row_to_dict(inv)
+
+            cust_result = await session.execute(
+                select(Customer).where(Customer.id == inv_d["customer_id"], Customer.user_id == user_id)
+            )
+            cust = cust_result.scalar_one_or_none()
+            risk = await _refresh_customer_risk(user_id, inv_d["customer_id"], session) or {}
+
+            fu_result = await session.execute(
+                select(Followup).where(Followup.user_id == user_id, Followup.invoice_id == payload.invoice_id)
+            )
+            followups = _rows_to_dicts(fu_result.all())
+
+            inv_d["overdue_days"] = max(0, _overdue_days(inv_d["due_date"]))
+            report = build_recovery_report(
+                customer_name=cust.business_name if cust else "",
+                invoice_summary=[inv_d], risk_info=risk, business_name=biz,
+                total_pending=inv_d.get("pending_amount", 0),
+                followup_count=len(followups), broken_promises=risk.get("broken_promises", 0),
+            )
+            return {"report": report, "invoice": inv_d, "risk": risk, "customer": _row_to_dict(cust) if cust else None}
     raise HTTPException(status_code=400, detail="Provide customer_id or invoice_id")
 
 
 # ============== DASHBOARD ==============
 @api.get("/dashboard/summary")
 async def dashboard_summary(user_id: str = Depends(get_current_user_id)):
-    invoices = await db.invoices.find({"user_id": user_id}, {"_id": 0}).to_list(5000)
-    customers = await db.customers.find({"user_id": user_id}, {"_id": 0}).to_list(5000)
-    today = _today()
+    async with async_session() as session:
+        inv_result = await session.execute(
+            select(Invoice).where(Invoice.user_id == user_id)
+        )
+        invoices = _rows_to_dicts(inv_result.all())
 
-    # refresh statuses inline
-    for inv in invoices:
-        inv["status"] = _calc_invoice_status(inv["due_date"], inv.get("pending_amount", 0), inv.get("total_amount", 0), inv.get("status"))
-        inv["overdue_days"] = max(0, _overdue_days(inv["due_date"])) if inv.get("pending_amount", 0) > 0 else 0
+        cust_result = await session.execute(
+            select(Customer).where(Customer.user_id == user_id)
+        )
+        customers = _rows_to_dicts(cust_result.all())
 
-    total_invoiced = sum(i.get("total_amount", 0) for i in invoices)
-    total_pending = sum(i.get("pending_amount", 0) for i in invoices)
-    total_recovered = sum(i.get("paid_amount", 0) for i in invoices)
-    overdue_invoices = [i for i in invoices if i.get("pending_amount", 0) > 0 and _overdue_days(i["due_date"]) > 0]
-    total_overdue = sum(i.get("pending_amount", 0) for i in overdue_invoices)
-    overdue_count = len(overdue_invoices)
-    avg_delay = int(sum(_overdue_days(i["due_date"]) for i in overdue_invoices) / overdue_count) if overdue_count else 0
+        for inv in invoices:
+            inv["status"] = _calc_invoice_status(inv["due_date"], inv.get("pending_amount", 0), inv.get("total_amount", 0), inv.get("status"))
+            inv["overdue_days"] = max(0, _overdue_days(inv["due_date"])) if inv.get("pending_amount", 0) > 0 else 0
 
-    high_risk_count = sum(1 for c in customers if c.get("risk_category") in ("High Risk", "Critical Risk"))
-    collection_pct = round((total_recovered / total_invoiced) * 100, 1) if total_invoiced else 0
+        total_invoiced = sum(i.get("total_amount", 0) for i in invoices)
+        total_pending = sum(i.get("pending_amount", 0) for i in invoices)
+        total_recovered = sum(i.get("paid_amount", 0) for i in invoices)
+        overdue_invoices = [i for i in invoices if i.get("pending_amount", 0) > 0 and _overdue_days(i["due_date"]) > 0]
+        total_overdue = sum(i.get("pending_amount", 0) for i in overdue_invoices)
+        overdue_count = len(overdue_invoices)
+        avg_delay = int(sum(_overdue_days(i["due_date"]) for i in overdue_invoices) / overdue_count) if overdue_count else 0
+        high_risk_count = sum(1 for c in customers if c.get("risk_category") in ("High Risk", "Critical Risk"))
+        collection_pct = round((total_recovered / total_invoiced) * 100, 1) if total_invoiced else 0
 
-    return {
-        "total_invoiced": total_invoiced,
-        "total_pending": total_pending,
-        "total_overdue": total_overdue,
-        "total_recovered": total_recovered,
-        "overdue_count": overdue_count,
-        "high_risk_count": high_risk_count,
-        "avg_delay_days": avg_delay,
-        "collection_efficiency": collection_pct,
-        "customer_count": len(customers),
-        "invoice_count": len(invoices),
-    }
+        return {
+            "total_invoiced": total_invoiced,
+            "total_pending": total_pending,
+            "total_overdue": total_overdue,
+            "total_recovered": total_recovered,
+            "overdue_count": overdue_count,
+            "high_risk_count": high_risk_count,
+            "avg_delay_days": avg_delay,
+            "collection_efficiency": collection_pct,
+            "customer_count": len(customers),
+            "invoice_count": len(invoices),
+        }
 
 
 @api.get("/dashboard/charts")
 async def dashboard_charts(user_id: str = Depends(get_current_user_id)):
-    invoices = await db.invoices.find({"user_id": user_id}, {"_id": 0}).to_list(5000)
-    customers = await db.customers.find({"user_id": user_id}, {"_id": 0}).to_list(5000)
-    payments = await db.payments.find({"user_id": user_id}, {"_id": 0}).to_list(5000)
+    async with async_session() as session:
+        inv_result = await session.execute(
+            select(Invoice).where(Invoice.user_id == user_id)
+        )
+        invoices = _rows_to_dicts(inv_result.all())
+
+        cust_result = await session.execute(
+            select(Customer).where(Customer.user_id == user_id)
+        )
+        customers = _rows_to_dicts(cust_result.all())
+
+        pay_result = await session.execute(
+            select(Payment).where(Payment.user_id == user_id)
+        )
+        payments = _rows_to_dicts(pay_result.all())
 
     status_dist = _build_status_distribution(invoices)
     risk_dist = _build_risk_distribution(customers)
@@ -720,7 +1040,6 @@ async def dashboard_charts(user_id: str = Depends(get_current_user_id)):
 
 
 def _build_status_distribution(invoices: list) -> dict:
-    """Count invoices by status."""
     status_dist = {}
     for inv in invoices:
         s = _calc_invoice_status(inv["due_date"], inv.get("pending_amount", 0), inv.get("total_amount", 0), inv.get("status"))
@@ -729,7 +1048,6 @@ def _build_status_distribution(invoices: list) -> dict:
 
 
 def _build_risk_distribution(customers: list) -> dict:
-    """Count customers by risk category."""
     risk_dist = {}
     for c in customers:
         r = c.get("risk_category", "Low Risk")
@@ -738,7 +1056,6 @@ def _build_risk_distribution(customers: list) -> dict:
 
 
 def _build_monthly_trend(payments: list) -> list:
-    """Aggregate payment amounts by month for the last 6 months."""
     from collections import defaultdict
     monthly = defaultdict(float)
     today = _today()
@@ -761,7 +1078,6 @@ def _build_monthly_trend(payments: list) -> list:
 
 
 def _build_top_overdue(invoices: list, customers: list) -> list:
-    """Get top 5 customers by overdue pending amount."""
     cust_map = {c["id"]: c for c in customers}
     overdue_by_cust = {}
     for inv in invoices:
@@ -774,21 +1090,41 @@ def _build_top_overdue(invoices: list, customers: list) -> list:
 
 @api.get("/dashboard/recent-activity")
 async def recent_activity(user_id: str = Depends(get_current_user_id)):
-    invs = await db.invoices.find({"user_id": user_id}, {"_id": 0}).sort("updated_at", -1).limit(5).to_list(5)
-    pays = await db.payments.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)
-    fus = await db.followups.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)
-    return {"invoices": invs, "payments": pays, "followups": fus}
+    async with async_session() as session:
+        inv_result = await session.execute(
+            select(Invoice).where(Invoice.user_id == user_id).order_by(Invoice.updated_at.desc()).limit(5)
+        )
+        invs = _rows_to_dicts(inv_result.all())
+
+        pay_result = await session.execute(
+            select(Payment).where(Payment.user_id == user_id).order_by(Payment.created_at.desc()).limit(5)
+        )
+        pays = _rows_to_dicts(pay_result.all())
+
+        fu_result = await session.execute(
+            select(Followup).where(Followup.user_id == user_id).order_by(Followup.created_at.desc()).limit(5)
+        )
+        fus = _rows_to_dicts(fu_result.all())
+
+        return {"invoices": invs, "payments": pays, "followups": fus}
 
 
 # ============== CASHFLOW FORECAST ==============
 @api.get("/cashflow/forecast")
 async def cashflow_forecast(user_id: str = Depends(get_current_user_id)):
-    invoices = await db.invoices.find({"user_id": user_id, "pending_amount": {"$gt": 0}}, {"_id": 0}).to_list(5000)
-    customers = await db.customers.find({"user_id": user_id}, {"_id": 0}).to_list(5000)
-    cust_map = {c["id"]: c for c in customers}
+    async with async_session() as session:
+        inv_result = await session.execute(
+            select(Invoice).where(Invoice.user_id == user_id, Invoice.pending_amount > 0)
+        )
+        invoices = _rows_to_dicts(inv_result.all())
 
+        cust_result = await session.execute(
+            select(Customer).where(Customer.user_id == user_id)
+        )
+        customers = _rows_to_dicts(cust_result.all())
+
+    cust_map = {c["id"]: c for c in customers}
     today = _today()
-    _ = today
     week_end = today + timedelta(days=7)
     month_end = today + timedelta(days=30)
 
@@ -808,7 +1144,6 @@ async def cashflow_forecast(user_id: str = Depends(get_current_user_id)):
         cust = cust_map.get(inv["customer_id"], {})
         risk = cust.get("risk_category", "Low Risk")
 
-        # weight by risk for likely collection
         if risk == "Low Risk":
             weight = 0.95
         elif risk == "Medium Risk":
@@ -843,30 +1178,68 @@ async def cashflow_forecast(user_id: str = Depends(get_current_user_id)):
 # ============== SETTINGS ==============
 @api.get("/settings")
 async def get_settings(user_id: str = Depends(get_current_user_id)):
-    s = await db.settings.find_one({"user_id": user_id}, {"_id": 0})
-    if not s:
-        s = {
-            "user_id": user_id,
-            "default_payment_terms": 30,
-            "default_followup_tone": "Professional",
-            "default_reminder_days": [-3, 0, 3, 7, 15, 30],
-            "reminder_channels": ["WhatsApp", "Email"],
-            "currency": "INR",
-            "ai_provider": "claude-sonnet-4-6",
-            "updated_at": utcnow_iso(),
-        }
-        await db.settings.insert_one(s)
-        s.pop("_id", None)
-    return s
+    async with async_session() as session:
+        result = await session.execute(
+            select(Settings).where(Settings.user_id == user_id)
+        )
+        s = result.scalar_one_or_none()
+        if not s:
+            now = utcnow_iso()
+            s = Settings(
+                user_id=user_id, default_payment_terms=30, default_followup_tone="Professional",
+                default_reminder_days="[-3, 0, 3, 7, 15, 30]", reminder_channels='["WhatsApp", "Email"]',
+                currency="INR", ai_provider="claude-sonnet-4-6", updated_at=now,
+            )
+            session.add(s)
+            await session.commit()
+            await session.refresh(s)
+        sd = _row_to_dict(s)
+        sd["default_reminder_days"] = json.loads(sd["default_reminder_days"])
+        sd["reminder_channels"] = json.loads(sd["reminder_channels"])
+        return sd
 
 
 @api.put("/settings")
 async def update_settings(payload: SettingsUpdate, user_id: str = Depends(get_current_user_id)):
-    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
-    updates["updated_at"] = utcnow_iso()
-    await db.settings.update_one({"user_id": user_id}, {"$set": updates}, upsert=True)
-    s = await db.settings.find_one({"user_id": user_id}, {"_id": 0})
-    return s
+    async with async_session() as session:
+        updates = {}
+        for k, v in payload.model_dump().items():
+            if v is not None:
+                if k in ("default_reminder_days", "reminder_channels"):
+                    updates[k] = json.dumps(v)
+                else:
+                    updates[k] = v
+        updates["updated_at"] = utcnow_iso()
+
+        result = await session.execute(
+            select(Settings).where(Settings.user_id == user_id)
+        )
+        existing = result.scalar_one_or_none()
+        if existing:
+            await session.execute(
+                update(Settings).where(Settings.user_id == user_id).values(**updates)
+            )
+        else:
+            updates["user_id"] = user_id
+            session.add(Settings(**updates))
+        await session.commit()
+
+        logger.info(
+            "Settings updated",
+            extra={
+                "event": "db.settings.update",
+                "user_id": user_id,
+                "updated_fields": list(updates.keys()),
+            },
+        )
+
+        result = await session.execute(
+            select(Settings).where(Settings.user_id == user_id)
+        )
+        s = _row_to_dict(result.scalar_one())
+        s["default_reminder_days"] = json.loads(s["default_reminder_days"])
+        s["reminder_channels"] = json.loads(s["reminder_channels"])
+        return s
 
 
 # ============== HEALTH ==============
@@ -876,6 +1249,8 @@ async def root():
 
 
 app.include_router(api)
+
+app.add_middleware(RequestLoggingMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -888,14 +1263,31 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def on_startup():
-    logger.info("PayGuard AI starting…")
+    logger.info(
+        "Application startup",
+        extra={
+            "event": "app.startup",
+            "database_url_host": os.environ.get("DATABASE_URL", "").split("@")[-1] if "@" in os.environ.get("DATABASE_URL", "") else "unknown",
+            "log_level": os.environ.get("LOG_LEVEL", "INFO"),
+            "cors_origins": os.environ.get("CORS_ORIGINS", "*"),
+        },
+    )
+    await init_db()
     try:
-        await seed_demo_data(db)
-        logger.info("Demo seed ensured.")
+        from seed import seed_demo_data
+        async with async_session() as session:
+            await seed_demo_data(session)
     except Exception as e:
-        logger.exception(f"Seed failed: {e}")
+        logger.exception(
+            f"Seed failed: {e}",
+            extra={"event": "seed.failed", "error_type": type(e).__name__, "error_message": str(e)},
+        )
 
 
 @app.on_event("shutdown")
 async def on_shutdown():
-    client.close()
+    logger.info(
+        "Application shutdown",
+        extra={"event": "app.shutdown"},
+    )
+    await close_db()

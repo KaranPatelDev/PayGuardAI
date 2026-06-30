@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
   LayoutDashboard, Users, FileText, Wallet, Sparkles,
-  TrendingUp, FileBarChart, Settings as SettingsIcon, LogOut, ShieldCheck, HelpCircle,
+  TrendingUp, FileBarChart, Settings as SettingsIcon, LogOut, ShieldCheck, HelpCircle, CreditCard,
 } from "lucide-react";
 
 const nav = [
@@ -14,6 +14,7 @@ const nav = [
   { to: "/app/cashflow",     label: "Cashflow",        icon: TrendingUp,      testid: "nav-cashflow" },
   { to: "/app/reports",      label: "Reports",         icon: FileBarChart,    testid: "nav-reports" },
   { to: "/app/how-to-use",   label: "How to Use",      icon: HelpCircle,      testid: "nav-how-to-use" },
+  { to: "/app/pricing",      label: "Pricing",         icon: CreditCard,      testid: "nav-pricing" },
   { to: "/app/settings",     label: "Settings",        icon: SettingsIcon,    testid: "nav-settings" },
 ];
 

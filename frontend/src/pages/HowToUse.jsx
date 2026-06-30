@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   CircleDollarSign,
   ClipboardList,
+  CreditCard,
   FileText,
   HelpCircle,
   LayoutDashboard,
@@ -50,6 +51,7 @@ const quickNav = [
   { title: "Record payments", text: "Update recovered amounts.", route: "/app/payments", icon: Wallet },
   { title: "Review insights", text: "Use reports and cashflow.", route: "/app/reports", icon: ClipboardList },
   { title: "Tune settings", text: "Set terms and reminders.", route: "/app/settings", icon: Settings },
+  { title: "View pricing", text: "See plans and pricing.", route: "/pricing", icon: CreditCard },
 ];
 
 const steps = [
@@ -78,6 +80,7 @@ const faqs = [
   ["Can I upload an invoice?", "Yes. The invoice screen supports PDF/image upload for AI-assisted extraction of invoice details."],
   ["Is this useful for small businesses?", "Yes. It is designed for owners and teams that need a simple way to track pending bills without complex enterprise software."],
   ["Can accountants use it?", "Yes. Accountants can use it to monitor receivables, overdue invoices, payment records, and recovery status for business clients."],
+  ["What are the pricing plans?", "PayGuard AI offers Free, Starter (₹799/mo), Growth (₹2,499/mo), and Enterprise tiers. Annual billing saves up to 27%. All paid plans include unlimited invoices, advanced risk scoring, and priority support."],
 ];
 
 const Section = ({ title, children, icon: Icon }) => (

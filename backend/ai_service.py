@@ -1,13 +1,15 @@
 """PayGuard AI - AI service (LLM + rule-based fallback) for follow-ups, risk, reports."""
 import os
 import json
-import logging
 import re
 import tempfile
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-logger = logging.getLogger(__name__)
+from logging_config import get_logger
+
+logger = get_logger("payguard.ai")
 
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
 
@@ -29,7 +31,16 @@ class FollowupConfig:
 
 async def parse_invoice_file(file_bytes: bytes, mime_type: str) -> dict:
     """Extract invoice fields from an uploaded PDF/image using Claude Sonnet 4.5 vision."""
+    logger.info(
+        "Invoice OCR started",
+        extra={"event": "ai.ocr.started", "mime_type": mime_type, "file_size_bytes": len(file_bytes)},
+    )
+
     if not EMERGENT_LLM_KEY:
+        logger.warning(
+            "Invoice OCR skipped — AI key not configured",
+            extra={"event": "ai.ocr.skipped", "reason": "no_api_key"},
+        )
         return {"_source": "no_key", "_error": "AI key not configured"}
 
     suffix_map = {
@@ -38,6 +49,7 @@ async def parse_invoice_file(file_bytes: bytes, mime_type: str) -> dict:
     }
     suffix = suffix_map.get(mime_type, ".pdf")
     tmp_path = None
+    start = time.time()
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             tmp.write(file_bytes)
@@ -70,12 +82,31 @@ async def parse_invoice_file(file_bytes: bytes, mime_type: str) -> dict:
 
         match = re.search(r"\{.*\}", text, re.DOTALL)
         if not match:
+            duration = round((time.time() - start) * 1000, 2)
+            logger.warning(
+                "Invoice OCR completed with no JSON in response",
+                extra={"event": "ai.ocr.completed", "source": "gemini-2.5-pro", "result": "no_json", "duration_ms": duration},
+            )
             return {"_source": "gemini-2.5-pro", "_error": "No JSON in response", "_raw": text[:500]}
         data = json.loads(match.group(0))
         data["_source"] = "gemini-2.5-pro"
+        duration = round((time.time() - start) * 1000, 2)
+        logger.info(
+            "Invoice OCR completed successfully",
+            extra={"event": "ai.ocr.completed", "source": "gemini-2.5-pro", "result": "success", "duration_ms": duration},
+        )
         return data
     except Exception as e:
-        logger.warning(f"Invoice OCR failed: {e}")
+        duration = round((time.time() - start) * 1000, 2)
+        logger.warning(
+            f"Invoice OCR failed: {e}",
+            extra={
+                "event": "ai.ocr.failed",
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "duration_ms": duration,
+            },
+        )
         return {"_source": "gemini-2.5-pro", "_error": str(e)}
     finally:
         if tmp_path and os.path.exists(tmp_path):
@@ -236,6 +267,18 @@ def compute_risk_score(stats: dict) -> dict:
         reasons.append("clean payment history")
 
     reason_text = "Customer has " + ", ".join(reasons) + "."
+
+    logger.info(
+        "Risk score computed",
+        extra={
+            "event": "ai.risk_score.computed",
+            "score": score,
+            "category": category,
+            "pending": pending,
+            "overdue_count": overdue_count,
+            "broken_promises": broken_promises,
+        },
+    )
 
     return {
         "risk_score": score,
@@ -423,11 +466,31 @@ async def generate_followup_ai(
 
 async def generate_followup_ai_from_config(cfg: FollowupConfig) -> dict:
     """Try LLM first using FollowupConfig; fall back to rule-based on any failure."""
+    logger.info(
+        "Follow-up generation started",
+        extra={
+            "event": "ai.followup.started",
+            "invoice_number": cfg.invoice_number,
+            "customer_name": cfg.customer_name,
+            "tone": cfg.tone,
+            "message_type": cfg.message_type,
+        },
+    )
+
     fallback = rule_based_followup_from_config(cfg)
 
     if not EMERGENT_LLM_KEY:
+        logger.info(
+            "Follow-up generation using rule-based fallback (no API key)",
+            extra={
+                "event": "ai.followup.fallback_used",
+                "reason": "no_api_key",
+                "invoice_number": cfg.invoice_number,
+            },
+        )
         return fallback
 
+    start = time.time()
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage
 
@@ -453,12 +516,43 @@ async def generate_followup_ai_from_config(cfg: FollowupConfig) -> dict:
         text = resp if isinstance(resp, str) else str(resp)
 
         result = _parse_llm_followup_response(text, fallback)
+        duration = round((time.time() - start) * 1000, 2)
         if result:
+            logger.info(
+                "Follow-up generation completed via LLM",
+                extra={
+                    "event": "ai.followup.llm_success",
+                    "source": "claude-sonnet-4-6",
+                    "invoice_number": cfg.invoice_number,
+                    "duration_ms": duration,
+                },
+            )
             return result
+        else:
+            logger.warning(
+                "LLM response parsing failed, using rule-based fallback",
+                extra={
+                    "event": "ai.followup.fallback_used",
+                    "reason": "parse_error",
+                    "invoice_number": cfg.invoice_number,
+                    "duration_ms": duration,
+                },
+            )
+            return fallback
     except Exception as e:
-        logger.warning(f"AI follow-up generation failed, using fallback: {e}")
-
-    return fallback
+        duration = round((time.time() - start) * 1000, 2)
+        logger.warning(
+            f"AI follow-up generation failed, using fallback: {e}",
+            extra={
+                "event": "ai.followup.fallback_used",
+                "reason": "exception",
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "invoice_number": cfg.invoice_number,
+                "duration_ms": duration,
+            },
+        )
+        return fallback
 
 
 # ----------------- RECOVERY REPORT -----------------
@@ -502,4 +596,17 @@ def build_recovery_report(
         f"The risk score is {score}/100 ({category}). "
         f"\n\nRECOMMENDED ACTION\n{action}\n"
     )
+
+    logger.info(
+        "Recovery report generated",
+        extra={
+            "event": "ai.report.generated",
+            "customer_name": customer_name,
+            "invoice_count": len(invoice_summary),
+            "risk_score": score,
+            "risk_category": category,
+            "total_pending": total_pending,
+        },
+    )
+
     return report

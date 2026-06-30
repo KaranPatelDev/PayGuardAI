@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ShieldCheck, Sparkles, TrendingUp, FileText, Users, Bell, ArrowRight, CheckCircle2, MessageSquare, Phone, Mail } from "lucide-react";
+import { ShieldCheck, Sparkles, TrendingUp, FileText, Users, Bell, ArrowRight, CheckCircle2, MessageSquare, Phone, Mail, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatINR } from "@/lib/format";
 
@@ -21,6 +21,7 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-2">
             <Link to="/how-to-use" data-testid="landing-how-to-use-link"><Button variant="ghost" className="rounded-lg">How to Use</Button></Link>
+            <Link to="/pricing" data-testid="landing-pricing-link"><Button variant="ghost" className="rounded-lg">Pricing</Button></Link>
             <Link to="/login" data-testid="landing-login-link"><Button variant="ghost" className="rounded-lg">Log in</Button></Link>
             <Link to="/register" data-testid="landing-signup-link"><Button className="rounded-lg bg-[#0A3B2C] hover:bg-[#072A1F] text-white">Get started</Button></Link>
           </div>
@@ -117,6 +118,52 @@ export default function Landing() {
         </div>
       </Section>
 
+      {/* Pricing preview */}
+      <Section className="py-16 border-t border-gray-200">
+        <div className="text-center">
+          <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#0A3B2C]">Pricing</p>
+          <h2 className="font-display text-3xl sm:text-4xl font-medium mt-3 tracking-tight max-w-3xl mx-auto">Simple, transparent plans that grow with your business.</h2>
+          <p className="mt-3 text-gray-500 max-w-xl mx-auto">Start free. Upgrade when you need more AI-powered recovery features.</p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6 mt-10 max-w-5xl mx-auto">
+          {[
+            { name: "Free", price: "₹0", period: "forever", features: ["5 customers", "10 invoices/mo", "5 AI follow-ups/mo", "Basic risk scoring"], highlight: false },
+            { name: "Starter", price: "₹799", period: "/ month", features: ["50 customers", "Unlimited invoices", "100 AI follow-ups/mo", "Advanced risk + cashflow"], highlight: true },
+            { name: "Growth", price: "₹2,499", period: "/ month", features: ["Unlimited everything", "Unlimited AI follow-ups", "Recovery reports", "Priority support (12h)"], highlight: false },
+          ].map((plan) => (
+            <div key={plan.name} className={`rounded-xl border p-6 ${plan.highlight ? "border-[#0A3B2C] shadow-md bg-white ring-1 ring-[#0A3B2C]/10" : "border-gray-200 bg-white hover:border-gray-300"} transition-all`}>
+              {plan.highlight && (
+                <div className="mb-3"><span className="bg-[#0A3B2C] text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 w-fit"><Sparkles className="w-3 h-3" /> Most Popular</span></div>
+              )}
+              <p className="font-display text-lg font-semibold text-gray-900">{plan.name}</p>
+              <div className="mt-2">
+                <span className="text-2xl font-display font-semibold text-gray-900">{plan.price}</span>
+                <span className="text-sm text-gray-500 ml-1">{plan.period}</span>
+              </div>
+              <ul className="mt-4 space-y-2">
+                {plan.features.map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> {f}
+                  </li>
+                ))}
+              </ul>
+              <Link to="/pricing" className="mt-5 block">
+                <Button variant={plan.highlight ? "default" : "outline"} className={`w-full rounded-lg ${plan.highlight ? "bg-[#0A3B2C] hover:bg-[#072A1F] text-white" : ""}`}>
+                  View plans <ArrowRight className="ml-1.5 w-3.5 h-3.5" />
+                </Button>
+              </Link>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-center mt-8">
+          <Link to="/pricing" data-testid="landing-view-all-plans" className="text-sm text-[#0A3B2C] font-medium hover:underline inline-flex items-center gap-1">
+            View all plans and compare features <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </Section>
+
       {/* AI message preview */}
       <Section className="py-16 border-t border-gray-200">
         <div className="grid lg:grid-cols-2 gap-10 items-center">
@@ -179,6 +226,7 @@ export default function Landing() {
             <p className="mt-4 text-white/80">Try the demo account or create your own in 30 seconds. No credit card required.</p>
             <div className="mt-7 flex gap-3 flex-wrap">
               <Link to="/register" data-testid="footer-cta-register"><Button className="rounded-lg h-12 px-6 bg-white text-[#0A3B2C] hover:bg-gray-100 text-base">Create my account</Button></Link>
+              <Link to="/pricing" data-testid="footer-cta-pricing"><Button variant="outline" className="rounded-lg h-12 px-6 border-white/30 text-white bg-transparent hover:bg-white/10 text-base">View pricing</Button></Link>
               <Link to="/login" data-testid="footer-cta-login"><Button variant="outline" className="rounded-lg h-12 px-6 border-white/30 text-white bg-transparent hover:bg-white/10 text-base">Try demo</Button></Link>
             </div>
           </div>
@@ -188,7 +236,11 @@ export default function Landing() {
       <footer className="border-t border-gray-200 py-8">
         <Section className="flex items-center justify-between flex-wrap gap-3">
           <p className="text-sm text-gray-500">© 2026 PayGuard AI — Recover faster. Build calmer.</p>
-          <p className="text-sm text-gray-500">Made for Indian MSMEs</p>
+          <div className="flex items-center gap-4">
+            <Link to="/pricing" className="text-sm text-gray-500 hover:text-gray-700">Pricing</Link>
+            <Link to="/how-to-use" className="text-sm text-gray-500 hover:text-gray-700">How to Use</Link>
+            <p className="text-sm text-gray-500">Made for Indian MSMEs</p>
+          </div>
         </Section>
       </footer>
     </div>

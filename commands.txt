@@ -1,172 +1,42 @@
-===============================================
-  PAYGUARD AI - COMPLETE RUN COMMANDS
-===============================================
+PostgreSQL Commands
+===================
 
------------------------------------------------
-1. PREREQUISITES
------------------------------------------------
-- Python 3.11+      -> python --version
-- Node.js 18+       -> node --version
-- Yarn 1.x          -> yarn --version
-- MongoDB 6+         -> mongod --version
+# --- psql (Windows - adjust path if needed) ---
+SET PSQL="C:\Program Files\PostgreSQL\18\bin\psql.exe"
 
------------------------------------------------
-2. MONGODB SETUP
------------------------------------------------
+# Connect
+%PSQL% -h localhost -p 5433 -U postgres -d payguard_ai
 
-# Start MongoDB (default port 27017)
-# Windows:
-mongod --dbpath "C:\data\db" --bind_ip 127.0.0.1
+# List databases
+%PSQL% -h localhost -p 5433 -U postgres -l
 
-# macOS (Homebrew):
-brew services start mongodb-community
+# List tables
+%PSQL% -h localhost -p 5433 -U postgres -d payguard_ai -c "\dt"
 
-# Linux:
-sudo systemctl start mongod
+# Show all data
+%PSQL% -h localhost -p 5433 -U postgres -d payguard_ai -c "SELECT id, full_name, email, business_name FROM users;"
+%PSQL% -h localhost -p 5433 -U postgres -d payguard_ai -c "SELECT id, business_name, risk_category FROM customers;"
+%PSQL% -h localhost -p 5433 -U postgres -d payguard_ai -c "SELECT id, invoice_number, status, total_amount, pending_amount FROM invoices;"
+%PSQL% -h localhost -p 5433 -U postgres -d payguard_ai -c "SELECT id, invoice_id, amount, payment_mode FROM payments;"
+%PSQL% -h localhost -p 5433 -U postgres -d payguard_ai -c "SELECT id, invoice_id, followup_type, status FROM followups;"
+%PSQL% -h localhost -p 5433 -U postgres -d payguard_ai -c "SELECT user_id, ai_provider, currency FROM settings;"
 
-# Verify MongoDB is running:
-mongosh --eval "db.runCommand({ ping: 1 })"
+# Count records
+%PSQL% -h localhost -p 5433 -U postgres -d payguard_ai -c "SELECT 'users' as tbl, COUNT(*) FROM users UNION ALL SELECT 'customers', COUNT(*) FROM customers UNION ALL SELECT 'invoices', COUNT(*) FROM invoices UNION ALL SELECT 'payments', COUNT(*) FROM payments UNION ALL SELECT 'followups', COUNT(*) FROM followups UNION ALL SELECT 'settings', COUNT(*) FROM settings;"
 
------------------------------------------------
-3. BACKEND SETUP
------------------------------------------------
+# --- Drop and recreate database ---
+%PSQL% -h localhost -p 5433 -U postgres -c "DROP DATABASE IF EXISTS payguard_ai;"
+%PSQL% -h localhost -p 5433 -U postgres -c "CREATE DATABASE payguard_ai;"
 
+# --- Start the backend ---
 cd backend
+python -m uvicorn server:app --host 0.0.0.0 --port 8000 --reload
 
-# Create virtual environment (Windows):
-python -m venv venv
-venv\Scripts\activate
+# --- Test API ---
+curl http://localhost:8000/api/
+curl -X POST http://localhost:8000/api/auth/login -H "Content-Type: application/json" -d "{\"email\":\"demo@payguard.ai\",\"password\":\"demo123\"}"
 
-# Create virtual environment (macOS/Linux):
-python3 -m venv venv
-source venv/bin/activate
-
-# Install dependencies:
-pip install -r requirements.txt
-
-# Create/update .env file with these values:
-# (backend/.env is already configured, shown here for reference)
-
-  MONGO_URL="mongodb://localhost:27017"
-  DB_NAME="payguard_ai"
-  CORS_ORIGINS="*"
-  EMERGENT_LLM_KEY=sk-emergent-b6eEeE9CfC6C97eAe8
-  JWT_SECRET=payguard_super_secret_jwt_key_change_in_production_9f8e7d6c5b4a
-  JWT_ALGORITHM=HS256
-  JWT_EXPIRE_MINUTES=10080
-
-# Demo credentials (for seed/login):
-  DEMO_EMAIL=demo@payguard.ai
-  DEMO_PASSWORD=demo123
-
-# Start the backend server:
-uvicorn server:app --host 0.0.0.0 --port 8000 --reload
-
-# Backend will be available at:
-#   API:    http://localhost:8000/api
-#   Docs:   http://localhost:8000/docs
-#   Health: http://localhost:8000/api/
-
------------------------------------------------
-4. FRONTEND SETUP
------------------------------------------------
-
-cd frontend
-
-# Install dependencies:
-yarn install
-
-# Create .env file in frontend/ with:
-  REACT_APP_BACKEND_URL=http://localhost:8000
-
-# Start the development server:
-yarn start
-
-# Frontend will be available at:
-#   http://localhost:3000
-
------------------------------------------------
-5. RUNNING TESTS
------------------------------------------------
-
-# Backend tests (from backend/ directory):
-pytest
-
-# Run tests without xdist parallelism:
-pytest -n 0
-
-# Backend linting:
-black --check .
-isort --check-only .
-flake8 .
-mypy .
-
------------------------------------------------
-6. FULL STARTUP (QUICK START)
------------------------------------------------
-
-# Terminal 1 - MongoDB:
-mongod --dbpath "C:\data\db"
-
-# Terminal 2 - Backend:
-cd backend
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn server:app --host 0.0.0.0 --port 8000 --reload
-
-# Terminal 3 - Frontend:
-cd frontend
-yarn install
-yarn start
-
------------------------------------------------
-7. DEMO LOGIN
------------------------------------------------
-  URL:      http://localhost:3000
-  Email:    demo@payguard.ai
-  Password: demo123
-
-  Auto-seeded: Patel Industrial Supplies
-  - 5 customers (ABC Traders, Shree Ganesh, Raj Steel, Om Packaging, Krishna Hardware)
-  - 5 invoices (overdue, due-soon, paid, due-today)
-  - Follow-up history with broken promises
-
------------------------------------------------
-8. ENVIRONMENT VARIABLES REFERENCE
------------------------------------------------
-
-BACKEND (.env):
-  MONGO_URL          MongoDB connection string
-  DB_NAME            Database name
-  CORS_ORIGINS       Allowed origins (comma-separated)
-  EMERGENT_LLM_KEY   AI provider API key
-  JWT_SECRET         Secret for JWT signing
-  JWT_ALGORITHM      JWT algorithm (default: HS256)
-  JWT_EXPIRE_MINUTES Token expiry (default: 10080 = 7 days)
-  DEMO_EMAIL         Demo user email (optional, for seed)
-  DEMO_PASSWORD      Demo user password (optional, for seed)
-
-FRONTEND (.env):
-  REACT_APP_BACKEND_URL   Backend API base URL
-
------------------------------------------------
-9. COMMON ISSUES
------------------------------------------------
-
-# If "MONGO_URL not set" error:
-  Make sure backend/.env exists with MONGO_URL
-
-# If "JWT_SECRET not set" error:
-  Set JWT_SECRET in backend/.env
-
-# If frontend can't reach backend:
-  Check REACT_APP_BACKEND_URL in frontend/.env
-  Ensure CORS_ORIGINS includes http://localhost:3000
-
-# If port 8000 already in use:
-  uvicorn server:app --port 8001
-  (update REACT_APP_BACKEND_URL accordingly)
-
-# If yarn install fails:
-  yarn install --ignore-engines
+# --- Check logs ---
+Get-Content logs\app.log -Tail 10
+Get-Content logs\access.log -Tail 10
+Get-Content logs\error.log -Tail 10

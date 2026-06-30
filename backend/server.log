@@ -1,0 +1,263 @@
+{"timestamp": "2026-06-29T23:26:51.796991+00:00", "level": "INFO", "service": "payguard", "module": "server", "function": "on_startup", "message": "Application startup", "event": "app.startup"}
+{"timestamp": "2026-06-29T23:26:51.799008+00:00", "level": "INFO", "service": "payguard", "module": "db", "function": "init_db", "message": "Database initialization started", "event": "db.init.started"}
+{"timestamp": "2026-06-29T23:26:52.156907+00:00", "level": "INFO", "service": "payguard", "module": "db", "function": "init_db", "message": "Database initialization completed", "event": "db.init.completed", "duration_ms": 355.95}
+{"timestamp": "2026-06-29T23:26:52.159942+00:00", "level": "INFO", "service": "payguard", "module": "seed", "function": "seed_demo_data", "message": "Seed execution started", "event": "seed.started"}
+{"timestamp": "2026-06-29T23:26:52.889157+00:00", "level": "INFO", "service": "payguard", "module": "seed", "function": "seed_demo_data", "message": "Seed execution completed", "user_id": "35036ccf-29b7-4953-b811-e4b48281b299", "event": "seed.completed", "duration_ms": 710.6}
+INFO:     127.0.0.1:3882 - "GET /health HTTP/1.1" 404 Not Found
+{"timestamp": "2026-06-30T00:45:49.751334+00:00", "level": "WARNING", "service": "payguard", "module": "auth_utils", "function": "get_current_user_id", "message": "Authentication token [REDACTED]", "event": "auth.token.missing"}
+INFO:     127.0.0.1:6490 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
+{"timestamp": "2026-06-30T00:46:13.784466+00:00", "level": "INFO", "service": "payguard", "module": "server", "function": "login", "message": "Login successful", "user_id": "35036ccf-29b7-4953-b811-e4b48281b299", "event": "auth.login.success"}
+INFO:     127.0.0.1:11984 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11985 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10451 - "OPTIONS /api/auth/login HTTP/1.1" 200 OK
+{"timestamp": "2026-06-30T00:58:52.035172+00:00", "level": "INFO", "service": "payguard", "module": "server", "function": "login", "message": "Login successful", "user_id": "35036ccf-29b7-4953-b811-e4b48281b299", "event": "auth.login.success"}
+INFO:     127.0.0.1:10451 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10451 - "OPTIONS /api/dashboard/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11547 - "OPTIONS /api/dashboard/charts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10451 - "OPTIONS /api/dashboard/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11547 - "OPTIONS /api/dashboard/charts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10451 - "GET /api/dashboard/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10451 - "GET /api/dashboard/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11547 - "GET /api/dashboard/charts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10451 - "GET /api/dashboard/charts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10451 - "OPTIONS /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11547 - "OPTIONS /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11547 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10451 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10451 - "OPTIONS /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11547 - "OPTIONS /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11547 - "GET /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10451 - "GET /api/payments HTTP/1.1" 200 OK
+{"timestamp": "2026-06-30T00:59:10.570060+00:00", "level": "WARNING", "service": "payguard", "module": "server", "function": "login", "message": "Login failed — invalid credentials", "event": "auth.login.failure"}
+INFO:     127.0.0.1:5549 - "POST /api/auth/login HTTP/1.1" 401 Unauthorized
+{"timestamp": "2026-06-30T00:59:17.941755+00:00", "level": "WARNING", "service": "payguard", "module": "server", "function": "login", "message": "Login failed — invalid credentials", "event": "auth.login.failure"}
+INFO:     127.0.0.1:6175 - "POST /api/auth/login HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:12959 - "OPTIONS /api/auth/register HTTP/1.1" 200 OK
+{"timestamp": "2026-06-30T00:59:55.941226+00:00", "level": "INFO", "service": "payguard", "module": "server", "function": "register", "message": "User registered successfully", "user_id": "2bae30e2-c6ae-4234-bfaa-42011184f11b", "event": "auth.register"}
+INFO:     127.0.0.1:12959 - "POST /api/auth/register HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12959 - "GET /api/dashboard/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:1585 - "GET /api/dashboard/charts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12959 - "GET /api/dashboard/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:1585 - "GET /api/dashboard/charts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11371 - "OPTIONS /api/customers?risk=All HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11371 - "OPTIONS /api/customers?risk=All HTTP/1.1" 200 OK
+INFO:     127.0.0.1:9566 - "GET /api/customers?risk=All HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11371 - "GET /api/customers?risk=All HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14762 - "OPTIONS /api/customers?search=K&risk=All HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14762 - "GET /api/customers?search=K&risk=All HTTP/1.1" 200 OK
+INFO:     127.0.0.1:9765 - "OPTIONS /api/customers HTTP/1.1" 200 OK
+{"timestamp": "2026-06-30T01:06:37.027234+00:00", "level": "INFO", "service": "payguard", "module": "server", "function": "create_customer", "message": "Customer created", "user_id": "2bae30e2-c6ae-4234-bfaa-42011184f11b", "event": "db.customer.create"}
+INFO:     127.0.0.1:9765 - "POST /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:9765 - "GET /api/customers?search=K&risk=All HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3071 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3071 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3071 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3071 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12507 - "OPTIONS /api/invoices HTTP/1.1" 200 OK
+{"timestamp": "2026-06-30T01:08:32.546615+00:00", "level": "INFO", "service": "payguard", "module": "ai_service", "function": "compute_risk_score", "message": "Risk score computed", "event": "ai.risk_score.computed"}
+{"timestamp": "2026-06-30T01:08:32.562199+00:00", "level": "INFO", "service": "payguard", "module": "server", "function": "create_invoice", "message": "Invoice created", "user_id": "2bae30e2-c6ae-4234-bfaa-42011184f11b", "event": "db.invoice.create"}
+INFO:     127.0.0.1:12507 - "POST /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12507 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14900 - "GET /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14900 - "GET /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14900 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:5783 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14900 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:5783 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:5783 - "OPTIONS /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14900 - "OPTIONS /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14900 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e HTTP/1.1" 200 OK
+INFO:     127.0.0.1:5783 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e HTTP/1.1" 200 OK
+INFO:     127.0.0.1:5783 - "OPTIONS /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14900 - "OPTIONS /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14900 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:5783 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11566 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:4283 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11566 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:4283 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:1557 - "GET /api/customers?risk=All HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14163 - "GET /api/customers?risk=All HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12766 - "OPTIONS /api/customers?search=K&risk=All HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12766 - "GET /api/customers?search=K&risk=All HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10690 - "OPTIONS /api/customers HTTP/1.1" 200 OK
+{"timestamp": "2026-06-30T01:43:35.845686+00:00", "level": "INFO", "service": "payguard", "module": "server", "function": "create_customer", "message": "Customer created", "user_id": "2bae30e2-c6ae-4234-bfaa-42011184f11b", "event": "db.customer.create"}
+INFO:     127.0.0.1:10690 - "POST /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10690 - "GET /api/customers?search=K&risk=All HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3138 - "OPTIONS /api/customers?risk=All HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3138 - "GET /api/customers?risk=All HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10148 - "OPTIONS /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10148 - "OPTIONS /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10148 - "GET /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10148 - "GET /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:9633 - "OPTIONS /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13044 - "OPTIONS /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10148 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13019 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10148 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13019 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6474 - "OPTIONS /api/invoices HTTP/1.1" 200 OK
+{"timestamp": "2026-06-30T01:45:04.444159+00:00", "level": "INFO", "service": "payguard", "module": "ai_service", "function": "compute_risk_score", "message": "Risk score computed", "event": "ai.risk_score.computed"}
+{"timestamp": "2026-06-30T01:45:04.454173+00:00", "level": "INFO", "service": "payguard", "module": "server", "function": "create_invoice", "message": "Invoice created", "user_id": "2bae30e2-c6ae-4234-bfaa-42011184f11b", "event": "db.invoice.create"}
+INFO:     127.0.0.1:6474 - "POST /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6474 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6474 - "OPTIONS /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3951 - "OPTIONS /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3951 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6474 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6474 - "OPTIONS /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3951 - "OPTIONS /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3951 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6474 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2072 - "OPTIONS /api/payments HTTP/1.1" 200 OK
+{"timestamp": "2026-06-30T01:49:12.140820+00:00", "level": "INFO", "service": "payguard", "module": "ai_service", "function": "compute_risk_score", "message": "Risk score computed", "event": "ai.risk_score.computed"}
+{"timestamp": "2026-06-30T01:49:12.146920+00:00", "level": "INFO", "service": "payguard", "module": "server", "function": "create_payment", "message": "Payment recorded", "user_id": "2bae30e2-c6ae-4234-bfaa-42011184f11b", "event": "db.payment.create"}
+INFO:     127.0.0.1:2072 - "POST /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2072 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2072 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2072 - "GET /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:4576 - "GET /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:4576 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2072 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:4576 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2072 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2072 - "GET /api/customers?risk=All HTTP/1.1" 200 OK
+INFO:     127.0.0.1:4576 - "GET /api/customers?risk=All HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6679 - "OPTIONS /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8639 - "OPTIONS /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8639 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6679 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6679 - "GET /api/customers?risk=All HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8639 - "GET /api/customers?risk=All HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8639 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6679 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8639 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6679 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6428 - "GET /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6428 - "GET /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6428 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14450 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2445 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6428 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6428 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2445 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2445 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6428 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10218 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10218 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10218 - "OPTIONS /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10218 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10218 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10218 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e HTTP/1.1" 200 OK
+INFO:     127.0.0.1:9173 - "OPTIONS /api/ai/generate-followup HTTP/1.1" 200 OK
+{"timestamp": "2026-06-30T01:50:21.888142+00:00", "level": "INFO", "service": "payguard", "module": "ai_service", "function": "generate_followup_ai_from_config", "message": "Follow-up generation started", "event": "ai.followup.started"}
+{"timestamp": "2026-06-30T01:50:21.896870+00:00", "level": "WARNING", "service": "payguard", "module": "ai_service", "function": "generate_followup_ai_from_config", "message": "AI follow-up generation failed, using fallback: No module named 'emergentintegrations'", "event": "ai.followup.fallback_used", "duration_ms": 5.72, "error_type": "ModuleNotFoundError", "error_message": "No module named 'emergentintegrations'"}
+{"timestamp": "2026-06-30T01:50:21.897957+00:00", "level": "INFO", "service": "payguard", "module": "server", "function": "ai_generate_followup", "message": "Follow-up generation requested via API", "user_id": "2bae30e2-c6ae-4234-bfaa-42011184f11b", "event": "ai.generate_followup.request"}
+INFO:     127.0.0.1:9173 - "POST /api/ai/generate-followup HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3813 - "GET /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3813 - "GET /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3813 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2136 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3813 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2136 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2136 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3813 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3813 - "OPTIONS /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2136 - "OPTIONS /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2136 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3813 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3813 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2136 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2968 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3813 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3813 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2968 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2968 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3813 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3813 - "GET /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2968 - "GET /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2968 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3813 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3813 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e HTTP/1.1" 200 OK
+{"timestamp": "2026-06-30T01:51:24.254851+00:00", "level": "INFO", "service": "payguard", "module": "ai_service", "function": "generate_followup_ai_from_config", "message": "Follow-up generation started", "event": "ai.followup.started"}
+{"timestamp": "2026-06-30T01:51:24.262871+00:00", "level": "WARNING", "service": "payguard", "module": "ai_service", "function": "generate_followup_ai_from_config", "message": "AI follow-up generation failed, using fallback: No module named 'emergentintegrations'", "event": "ai.followup.fallback_used", "duration_ms": 4.03, "error_type": "ModuleNotFoundError", "error_message": "No module named 'emergentintegrations'"}
+{"timestamp": "2026-06-30T01:51:24.265871+00:00", "level": "INFO", "service": "payguard", "module": "server", "function": "ai_generate_followup", "message": "Follow-up generation requested via API", "user_id": "2bae30e2-c6ae-4234-bfaa-42011184f11b", "event": "ai.generate_followup.request"}
+INFO:     127.0.0.1:2138 - "POST /api/ai/generate-followup HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2138 - "OPTIONS /api/followups HTTP/1.1" 200 OK
+{"timestamp": "2026-06-30T01:51:28.431211+00:00", "level": "INFO", "service": "payguard", "module": "ai_service", "function": "compute_risk_score", "message": "Risk score computed", "event": "ai.risk_score.computed"}
+{"timestamp": "2026-06-30T01:51:28.439745+00:00", "level": "INFO", "service": "payguard", "module": "server", "function": "create_followup", "message": "Follow-up created", "user_id": "2bae30e2-c6ae-4234-bfaa-42011184f11b", "event": "db.followup.create"}
+INFO:     127.0.0.1:2138 - "POST /api/followups HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10628 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2871 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10628 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2871 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2871 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10628 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10628 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2871 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2871 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10628 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:9645 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:1369 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:1369 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e HTTP/1.1" 200 OK
+INFO:     127.0.0.1:9645 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e HTTP/1.1" 200 OK
+INFO:     127.0.0.1:9645 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:1369 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e/timeline HTTP/1.1" 200 OK
+{"timestamp": "2026-06-30T01:53:06.212206+00:00", "level": "INFO", "service": "payguard", "module": "ai_service", "function": "compute_risk_score", "message": "Risk score computed", "event": "ai.risk_score.computed"}
+{"timestamp": "2026-06-30T01:53:06.219728+00:00", "level": "INFO", "service": "payguard", "module": "server", "function": "create_payment", "message": "Payment recorded", "user_id": "2bae30e2-c6ae-4234-bfaa-42011184f11b", "event": "db.payment.create"}
+INFO:     127.0.0.1:9044 - "POST /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:9044 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e HTTP/1.1" 200 OK
+INFO:     127.0.0.1:9044 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6647 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6647 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6647 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e HTTP/1.1" 200 OK
+{"timestamp": "2026-06-30T01:53:41.155612+00:00", "level": "INFO", "service": "payguard", "module": "ai_service", "function": "generate_followup_ai_from_config", "message": "Follow-up generation started", "event": "ai.followup.started"}
+{"timestamp": "2026-06-30T01:53:41.164636+00:00", "level": "WARNING", "service": "payguard", "module": "ai_service", "function": "generate_followup_ai_from_config", "message": "AI follow-up generation failed, using fallback: No module named 'emergentintegrations'", "event": "ai.followup.fallback_used", "duration_ms": 4.0, "error_type": "ModuleNotFoundError", "error_message": "No module named 'emergentintegrations'"}
+{"timestamp": "2026-06-30T01:53:41.167636+00:00", "level": "INFO", "service": "payguard", "module": "server", "function": "ai_generate_followup", "message": "Follow-up generation requested via API", "user_id": "2bae30e2-c6ae-4234-bfaa-42011184f11b", "event": "ai.generate_followup.request"}
+INFO:     127.0.0.1:10866 - "POST /api/ai/generate-followup HTTP/1.1" 200 OK
+{"timestamp": "2026-06-30T01:53:45.621407+00:00", "level": "INFO", "service": "payguard", "module": "ai_service", "function": "compute_risk_score", "message": "Risk score computed", "event": "ai.risk_score.computed"}
+{"timestamp": "2026-06-30T01:53:45.626175+00:00", "level": "INFO", "service": "payguard", "module": "server", "function": "create_followup", "message": "Follow-up created", "user_id": "2bae30e2-c6ae-4234-bfaa-42011184f11b", "event": "db.followup.create"}
+INFO:     127.0.0.1:10866 - "POST /api/followups HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11304 - "GET /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11304 - "GET /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8438 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8850 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8850 - "GET /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8438 - "GET /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8438 - "OPTIONS /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8438 - "OPTIONS /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8850 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8438 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8850 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8438 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8438 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8850 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8850 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8438 - "GET /api/invoices/9ccbcde2-b8a3-43d5-9b17-1ffc9f8750bd/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8438 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8850 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:7828 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8438 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8438 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e HTTP/1.1" 200 OK
+INFO:     127.0.0.1:7828 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e HTTP/1.1" 200 OK
+INFO:     127.0.0.1:7828 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8438 - "GET /api/invoices/8f1fb01a-e853-4580-be1d-e93df5a32b7e/timeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:4008 - "GET /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:4008 - "GET /api/payments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:4008 - "OPTIONS /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14729 - "OPTIONS /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14729 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:4008 - "GET /api/invoices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:4008 - "OPTIONS /api/cashflow/forecast HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14729 - "OPTIONS /api/cashflow/forecast HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14729 - "GET /api/cashflow/forecast HTTP/1.1" 200 OK
+INFO:     127.0.0.1:4008 - "GET /api/cashflow/forecast HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10447 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10447 - "GET /api/customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10447 - "OPTIONS /api/ai/generate-recovery-report HTTP/1.1" 200 OK
+{"timestamp": "2026-06-30T01:56:15.771587+00:00", "level": "INFO", "service": "payguard", "module": "ai_service", "function": "compute_risk_score", "message": "Risk score computed", "event": "ai.risk_score.computed"}
+{"timestamp": "2026-06-30T01:56:15.789146+00:00", "level": "INFO", "service": "payguard", "module": "ai_service", "function": "build_recovery_report", "message": "Recovery report generated", "event": "ai.report.generated"}
+INFO:     127.0.0.1:10447 - "POST /api/ai/generate-recovery-report HTTP/1.1" 200 OK
+{"timestamp": "2026-06-30T01:56:36.257612+00:00", "level": "INFO", "service": "payguard", "module": "ai_service", "function": "compute_risk_score", "message": "Risk score computed", "event": "ai.risk_score.computed"}
+{"timestamp": "2026-06-30T01:56:36.275158+00:00", "level": "INFO", "service": "payguard", "module": "ai_service", "function": "build_recovery_report", "message": "Recovery report generated", "event": "ai.report.generated"}
+INFO:     127.0.0.1:6838 - "POST /api/ai/generate-recovery-report HTTP/1.1" 200 OK
