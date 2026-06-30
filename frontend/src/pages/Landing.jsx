@@ -1,6 +1,19 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck, Sparkles, TrendingUp, FileText, Users, Bell, ArrowRight, CheckCircle2, MessageSquare, Phone, Mail, Crown, Menu, X } from "lucide-react";
+import {
+  ArrowRight,
+  Bell,
+  CheckCircle2,
+  FileText,
+  Mail,
+  Menu,
+  MessageSquare,
+  Phone,
+  ShieldCheck,
+  TrendingUp,
+  Users,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatINR } from "@/lib/format";
 
@@ -8,257 +21,222 @@ const Section = ({ children, className = "" }) => (
   <section className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ${className}`}>{children}</section>
 );
 
+const Logo = ({ light = false }) => (
+  <Link to="/" className="flex items-center gap-2.5" data-testid="landing-logo">
+    <div className={`${light ? "bg-white/12" : "bg-[#0A3B2C]"} w-8 h-8 rounded-lg flex items-center justify-center`}>
+      <ShieldCheck className="w-5 h-5 text-white" />
+    </div>
+    <span className={`font-display text-lg font-semibold tracking-normal ${light ? "text-white" : "text-gray-950"}`}>PayGuard AI</span>
+  </Link>
+);
+
+const invoices = [
+  { id: "INV-2041", customer: "Aarav Textiles", due: "8d overdue", amount: 184000, risk: "High", tone: "Firm reminder" },
+  { id: "INV-2038", customer: "Nexa Packaging", due: "Due today", amount: 72500, risk: "Medium", tone: "Professional" },
+  { id: "INV-2034", customer: "Veda Foods", due: "Paid", amount: 96000, risk: "Low", tone: "Logged" },
+];
+
+const workflow = [
+  { icon: Users, title: "Build the customer ledger", text: "Store contacts, GST details, terms, credit limits, notes, and payment behavior in one place." },
+  { icon: FileText, title: "Track every invoice", text: "Know what is pending, what is overdue, and how much cash is still blocked by each account." },
+  { icon: Bell, title: "Send the right reminder", text: "Generate WhatsApp, email, and call scripts matched to due dates, tone, and customer risk." },
+  { icon: CheckCircle2, title: "Record recovery proof", text: "Save follow-ups and payments so your team has a reliable trail before the next escalation." },
+];
+
+const channels = [
+  { icon: MessageSquare, label: "WhatsApp", text: "Short, direct payment reminders ready to send." },
+  { icon: Mail, label: "Email", text: "Subject and body for formal follow-ups." },
+  { icon: Phone, label: "Call script", text: "Structured talking points for collection calls." },
+];
+
 export default function Landing() {
   const [mobileMenu, setMobileMenu] = useState(false);
 
   return (
-    <div className="bg-[#F9FAFB] text-gray-900">
-      {/* Top bar */}
-      <header className="sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-gray-200">
+    <div className="bg-[#F7F8F5] text-gray-950">
+      <header className="sticky top-0 z-40 bg-white/82 backdrop-blur-xl border-b border-[#E2E5DD]">
         <Section className="h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#0A3B2C] flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-display text-lg font-semibold tracking-tight">PayGuard AI</span>
-          </div>
+          <Logo />
           <div className="hidden sm:flex items-center gap-2">
             <Link to="/how-to-use" data-testid="landing-how-to-use-link"><Button variant="ghost" className="rounded-lg">How to Use</Button></Link>
             <Link to="/pricing" data-testid="landing-pricing-link"><Button variant="ghost" className="rounded-lg">Pricing</Button></Link>
             <Link to="/login" data-testid="landing-login-link"><Button variant="ghost" className="rounded-lg">Log in</Button></Link>
-            <Link to="/register" data-testid="landing-signup-link"><Button className="rounded-lg bg-[#0A3B2C] hover:bg-[#072A1F] text-white">Get started</Button></Link>
+            <Link to="/register" data-testid="landing-signup-link"><Button className="rounded-lg bg-[#0A3B2C] hover:bg-[#072A1F] text-white">Start tracking</Button></Link>
           </div>
-          <div className="flex sm:hidden items-center gap-2">
-            <Link to="/login" data-testid="landing-login-link-mobile"><Button variant="ghost" size="sm" className="rounded-lg">Log in</Button></Link>
-            <Link to="/register" data-testid="landing-signup-link-mobile"><Button size="sm" className="rounded-lg bg-[#0A3B2C] hover:bg-[#072A1F] text-white">Get started</Button></Link>
-            <button onClick={() => setMobileMenu(!mobileMenu)} className="p-2 -mr-2 rounded-lg hover:bg-gray-100" aria-label="Menu">
-              {mobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
+          <button onClick={() => setMobileMenu(!mobileMenu)} className="sm:hidden p-2 -mr-2 rounded-lg hover:bg-[#F3F5EF]" aria-label="Menu">
+            {mobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </Section>
         {mobileMenu && (
-          <div className="sm:hidden border-t border-gray-200 bg-white px-4 py-3 space-y-1">
-            <Link to="/how-to-use" onClick={() => setMobileMenu(false)} className="block px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100">How to Use</Link>
-            <Link to="/pricing" onClick={() => setMobileMenu(false)} className="block px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100">Pricing</Link>
+          <div className="sm:hidden border-t border-[#E2E5DD] bg-white px-4 py-3 space-y-1">
+            <Link to="/how-to-use" onClick={() => setMobileMenu(false)} className="block px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-[#F3F5EF]">How to Use</Link>
+            <Link to="/pricing" onClick={() => setMobileMenu(false)} className="block px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-[#F3F5EF]">Pricing</Link>
+            <Link to="/login" onClick={() => setMobileMenu(false)} className="block px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-[#F3F5EF]">Log in</Link>
+            <Link to="/register" onClick={() => setMobileMenu(false)} className="block px-3 py-2.5 rounded-lg text-sm font-medium text-white bg-[#0A3B2C]">Start tracking</Link>
           </div>
         )}
       </header>
 
-      {/* Hero */}
-      <Section className="pt-16 sm:pt-24 pb-16 relative">
-        <div className="grid lg:grid-cols-12 gap-10 items-center">
-          <div className="lg:col-span-7">
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-[#E8E6E1] text-[#0A3B2C] border border-[#cfcdc6]">
-              <Sparkles className="w-3.5 h-3.5" /> Built for Indian MSMEs, freelancers & agencies
-            </span>
-            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight mt-5 leading-[1.05]">
-              Recover payments <br />
-              <span className="text-[#0A3B2C]">faster</span> with AI.
-            </h1>
-            <p className="mt-6 text-lg text-gray-600 max-w-2xl leading-relaxed">
-              PayGuard AI helps Indian businesses track unpaid invoices, identify risky customers, generate smart WhatsApp & email follow-ups, and protect cashflow — all from one calm, modern dashboard.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/register" data-testid="hero-cta-register"><Button className="rounded-lg h-12 px-6 bg-[#0A3B2C] hover:bg-[#072A1F] text-white text-base">Start free <ArrowRight className="ml-2 w-4 h-4" /></Button></Link>
-              <Link to="/login" data-testid="hero-cta-demo"><Button variant="outline" className="rounded-lg h-12 px-6 border-gray-300 text-base">Try the demo account</Button></Link>
-            </div>
-            <div className="mt-6 text-sm text-gray-500 flex items-center gap-4 flex-wrap">
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> Demo: demo@payguard.ai / demo123</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> No credit card required</span>
-            </div>
-          </div>
-
-          <div className="lg:col-span-5">
-            <div className="relative bg-white rounded-2xl border border-gray-200 shadow-lg p-6">
-              <div className="text-xs uppercase tracking-[0.2em] font-bold text-gray-400">Live Recovery</div>
-              <p className="font-display text-3xl font-semibold mt-2">{formatINR(437500)}</p>
-              <p className="text-sm text-emerald-600 mt-1">+ {formatINR(125000)} recovered this week</p>
-
-              <div className="mt-6 space-y-3">
-                {[
-                  { c: "ABC Traders", a: 125000, s: "Overdue 22d", color: "text-orange-700 bg-orange-50 border-orange-200" },
-                  { c: "Raj Steel Corp.", a: 240000, s: "Critical Risk", color: "text-red-700 bg-red-50 border-red-200" },
-                  { c: "Shree Ganesh Mfg.", a: 74500, s: "Due in 3d", color: "text-amber-700 bg-amber-50 border-amber-200" },
-                ].map((r) => (
-                  <div key={r.c} className="flex items-center justify-between border border-gray-100 rounded-xl p-3 hover:bg-gray-50 transition">
-                    <div>
-                      <p className="text-sm font-medium">{r.c}</p>
-                      <p className="text-xs text-gray-500">{formatINR(r.a)}</p>
-                    </div>
-                    <span className={`text-xs px-2.5 py-0.5 rounded-full border ${r.color}`}>{r.s}</span>
-                  </div>
-                ))}
+      <main>
+        <section className="relative overflow-hidden bg-[#0A3B2C] text-white">
+          <Section className="min-h-[calc(100vh-4rem)] py-16 lg:py-20 grid lg:grid-cols-12 gap-10 items-center">
+            <div className="lg:col-span-6">
+              <p className="text-xs uppercase tracking-[0.18em] font-bold text-emerald-100">Invoice recovery workspace</p>
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-semibold leading-[1.04] mt-5">
+                Recover unpaid invoices without chasing blindly.
+              </h1>
+              <p className="mt-5 text-base sm:text-lg text-white/78 leading-relaxed max-w-xl">
+                PayGuard AI helps businesses track pending invoices, prioritize risky customers, create better payment reminders, and keep a proof trail for every recovery action.
+              </p>
+              <div className="mt-8 flex flex-col sm:flex-row gap-3">
+                <Link to="/register" data-testid="landing-primary-cta">
+                  <Button className="h-11 rounded-lg bg-white text-[#0A3B2C] hover:bg-emerald-50">
+                    Start recovery workflow <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+                <Link to="/login" data-testid="landing-demo-cta">
+                  <Button variant="outline" className="h-11 rounded-lg border-white/30 bg-white/8 text-white hover:bg-white/12 hover:text-white">
+                    View demo account
+                  </Button>
+                </Link>
               </div>
-
-              <div className="mt-5 bg-[#0A3B2C] text-white rounded-xl p-4">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-bold text-white/70"><Sparkles className="w-3.5 h-3.5" /> AI WhatsApp</div>
-                <p className="text-sm leading-relaxed mt-2">&quot;Namaste Rajesh ji, invoice INV-1001 of ₹1,25,000 was due on 5 Feb. Kindly confirm the expected payment date.&quot;</p>
+              <div className="mt-8 grid grid-cols-3 gap-4 max-w-lg">
+                <Proof label="Overdue tracked" value={formatINR(426000)} />
+                <Proof label="Open invoices" value="18" />
+                <Proof label="Risk accounts" value="5" />
               </div>
             </div>
-          </div>
-        </div>
-      </Section>
 
-      {/* Problem */}
-      <Section className="py-16 border-t border-gray-200">
-        <div className="grid lg:grid-cols-2 gap-12">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#0A3B2C]">The Problem</p>
-            <h2 className="font-display text-3xl sm:text-4xl font-medium mt-3 tracking-tight">Indian businesses don&apos;t fail from lack of sales — they fail from delayed payments.</h2>
-          </div>
-          <div className="space-y-4 text-gray-600">
-            <p>Owners deliver products, raise invoices, and then wait weeks or months. Follow-ups happen across WhatsApp, calls, Excel sheets, and memory. Cashflow suffers. Salaries get delayed. Vendor pressure builds.</p>
-            <p className="text-gray-900 font-medium">PayGuard AI turns payment recovery into a calm, AI-native workflow.</p>
-          </div>
-        </div>
-      </Section>
-
-      {/* Features */}
-      <Section className="py-16 border-t border-gray-200">
-        <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#0A3B2C]">How it works</p>
-        <h2 className="font-display text-3xl sm:text-4xl font-medium mt-3 tracking-tight max-w-3xl">From manual chaos to AI-powered recovery in 4 steps.</h2>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
-          {[
-            { i: FileText, t: "Track invoices", d: "Upload or add invoices. Auto-detect overdue, due-soon, and partially paid statuses." },
-            { i: Users, t: "Score customer risk", d: "AI analyses payment delays, broken promises, and behaviour to flag risky customers." },
-            { i: Sparkles, t: "AI follow-ups", d: "Generate WhatsApp messages, emails, and call scripts in seconds — in your tone." },
-            { i: TrendingUp, t: "Recover & forecast", d: "Visual recovery timeline, proof trail, and weekly cashflow forecast." },
-          ].map((f) => (
-            <div key={f.t} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow">
-              <div className="w-10 h-10 rounded-lg bg-[#0A3B2C]/10 text-[#0A3B2C] flex items-center justify-center"><f.i className="w-5 h-5" /></div>
-              <h3 className="font-display text-lg font-medium mt-4">{f.t}</h3>
-              <p className="text-sm text-gray-600 mt-2 leading-relaxed">{f.d}</p>
+            <div className="lg:col-span-6">
+              <ProductPreview />
             </div>
-          ))}
-        </div>
-      </Section>
+          </Section>
+        </section>
 
-      {/* Pricing preview */}
-      <Section className="py-16 border-t border-gray-200">
-        <div className="text-center">
-          <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#0A3B2C]">Pricing</p>
-          <h2 className="font-display text-3xl sm:text-4xl font-medium mt-3 tracking-tight max-w-3xl mx-auto">Simple, transparent plans that grow with your business.</h2>
-          <p className="mt-3 text-gray-500 max-w-xl mx-auto">Start free. Upgrade when you need more AI-powered recovery features.</p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6 mt-10 max-w-5xl mx-auto">
-          {[
-            { name: "Free", price: "₹0", period: "forever", features: ["5 customers", "10 invoices/mo", "5 AI follow-ups/mo", "Basic risk scoring"], highlight: false },
-            { name: "Starter", price: "₹799", period: "/ month", features: ["50 customers", "Unlimited invoices", "100 AI follow-ups/mo", "Advanced risk + cashflow"], highlight: true },
-            { name: "Growth", price: "₹2,499", period: "/ month", features: ["Unlimited everything", "Unlimited AI follow-ups", "Recovery reports", "Priority support (12h)"], highlight: false },
-          ].map((plan) => (
-            <div key={plan.name} className={`rounded-xl border p-6 ${plan.highlight ? "border-[#0A3B2C] shadow-md bg-white ring-1 ring-[#0A3B2C]/10" : "border-gray-200 bg-white hover:border-gray-300"} transition-all`}>
-              {plan.highlight && (
-                <div className="mb-3"><span className="bg-[#0A3B2C] text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 w-fit"><Sparkles className="w-3 h-3" /> Most Popular</span></div>
-              )}
-              <p className="font-display text-lg font-semibold text-gray-900">{plan.name}</p>
-              <div className="mt-2">
-                <span className="text-2xl font-display font-semibold text-gray-900">{plan.price}</span>
-                <span className="text-sm text-gray-500 ml-1">{plan.period}</span>
-              </div>
-              <ul className="mt-4 space-y-2">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> {f}
-                  </li>
-                ))}
-              </ul>
-              <Link to="/pricing" className="mt-5 block">
-                <Button variant={plan.highlight ? "default" : "outline"} className={`w-full rounded-lg ${plan.highlight ? "bg-[#0A3B2C] hover:bg-[#072A1F] text-white" : ""}`}>
-                  View plans <ArrowRight className="ml-1.5 w-3.5 h-3.5" />
-                </Button>
-              </Link>
-            </div>
-          ))}
-        </div>
-
-        <div className="text-center mt-8">
-          <Link to="/pricing" data-testid="landing-view-all-plans" className="text-sm text-[#0A3B2C] font-medium hover:underline inline-flex items-center gap-1">
-            View all plans and compare features <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-      </Section>
-
-      {/* AI message preview */}
-      <Section className="py-16 border-t border-gray-200">
-        <div className="grid lg:grid-cols-2 gap-10 items-center">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#0A3B2C]">AI follow-ups</p>
-            <h2 className="font-display text-3xl sm:text-4xl font-medium mt-3 tracking-tight">Three messages. One click. Indian business tone built-in.</h2>
-            <p className="mt-4 text-gray-600">Pick a tone — polite, professional, friendly, strict, or final warning. PayGuard generates the WhatsApp, email, and call script together. Copy, send, and save proof.</p>
-            <ul className="mt-6 space-y-2 text-sm text-gray-700">
-              {["WhatsApp message (1-3 lines)","Email subject + body","Call script with respectful framing","Auto-saved as proof trail"].map((t) => (
-                <li key={t} className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> {t}</li>
-              ))}
-            </ul>
+        <Section className="py-16">
+          <div className="max-w-3xl">
+            <p className="text-xs uppercase tracking-[0.18em] font-bold text-[#0A3B2C]">Built around the work</p>
+            <h2 className="font-display text-3xl sm:text-4xl font-semibold mt-3">From unpaid invoice to recorded payment, every step has context.</h2>
           </div>
-
-          <div className="grid gap-4">
-            {[
-              { i: MessageSquare, label: "WhatsApp", body: "Namaste Rajesh ji, gentle reminder — invoice INV-1001 of ₹1,25,000 was due on 5 Feb. Kindly confirm the payment timeline." },
-              { i: Mail, label: "Email subject", body: "Payment Reminder: Invoice INV-1001 of ₹1,25,000" },
-              { i: Phone, label: "Call script", body: "Namaste Rajesh ji, I wanted to check the payment status for invoice INV-1001. The amount is ₹1,25,000 and it was due on 5 Feb. Can you please confirm today or tomorrow?" },
-            ].map((m) => (
-              <div key={m.label} className="bg-white border border-gray-200 rounded-xl p-5">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-bold text-gray-500"><m.i className="w-3.5 h-3.5" /> {m.label}</div>
-                <p className="text-sm mt-2 leading-relaxed">{m.body}</p>
+          <div className="grid md:grid-cols-4 gap-4 mt-8">
+            {workflow.map((item) => (
+              <div key={item.title} className="pg-surface rounded-lg p-5">
+                <div className="w-9 h-9 rounded-lg bg-[#0A3B2C]/10 text-[#0A3B2C] flex items-center justify-center">
+                  <item.icon className="w-4 h-4" />
+                </div>
+                <h3 className="font-display text-lg font-semibold mt-4">{item.title}</h3>
+                <p className="text-sm text-gray-600 mt-2 leading-relaxed">{item.text}</p>
               </div>
             ))}
           </div>
-        </div>
-      </Section>
+        </Section>
 
-      {/* Benefits */}
-      <Section className="py-16 border-t border-gray-200">
-        <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#0A3B2C]">Why it matters</p>
-        <h2 className="font-display text-3xl sm:text-4xl font-medium mt-3 tracking-tight max-w-3xl">Delayed payments hurt salaries, growth, and survival. PayGuard fixes that.</h2>
-        <div className="grid md:grid-cols-3 gap-6 mt-10">
-          {[
-            "Recover payments faster",
-            "Reduce manual follow-up work",
-            "Improve cashflow visibility",
-            "Avoid risky customers",
-            "Maintain proper proof trail",
-            "Generate professional reminders",
-            "Reduce awkward payment calls",
-            "Make smarter credit decisions",
-            "Build business discipline",
-          ].map((b) => (
-            <div key={b} className="flex items-start gap-3 bg-white border border-gray-200 rounded-xl p-5">
-              <CheckCircle2 className="w-5 h-5 text-[#0A3B2C] mt-0.5" />
-              <span className="text-sm font-medium">{b}</span>
+        <section className="bg-white border-y border-[#E2E5DD]">
+          <Section className="py-16 grid lg:grid-cols-2 gap-10 items-center">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] font-bold text-[#0A3B2C]">Follow-ups that fit the situation</p>
+              <h2 className="font-display text-3xl sm:text-4xl font-semibold mt-3">One invoice, three usable scripts.</h2>
+              <p className="text-gray-600 mt-4 leading-relaxed">
+                Select the invoice, choose a tone, and generate messages your team can actually send. The output uses customer name, invoice value, due date, overdue days, and payment context.
+              </p>
+              <div className="grid sm:grid-cols-3 gap-3 mt-7">
+                {channels.map((item) => (
+                  <div key={item.label} className="rounded-lg border border-gray-200 p-4 bg-[#FAFBF7]">
+                    <item.icon className="w-5 h-5 text-[#0A3B2C]" />
+                    <p className="font-semibold mt-3">{item.label}</p>
+                    <p className="text-xs text-gray-600 mt-1 leading-relaxed">{item.text}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
-      </Section>
-
-      {/* CTA */}
-      <Section className="py-20 border-t border-gray-200">
-        <div className="bg-[#0A3B2C] rounded-2xl p-10 sm:p-14 relative overflow-hidden grain">
-          <div className="relative z-10 max-w-2xl">
-            <Bell className="w-6 h-6 text-white/80" />
-            <h2 className="font-display text-3xl sm:text-4xl font-medium text-white mt-4 tracking-tight">Stop chasing payments. Start recovering them.</h2>
-            <p className="mt-4 text-white/80">Try the demo account or create your own in 30 seconds. No credit card required.</p>
-            <div className="mt-7 flex gap-3 flex-wrap">
-              <Link to="/register" data-testid="footer-cta-register"><Button className="rounded-lg h-12 px-6 bg-white text-[#0A3B2C] hover:bg-gray-100 text-base">Create my account</Button></Link>
-              <Link to="/pricing" data-testid="footer-cta-pricing"><Button variant="outline" className="rounded-lg h-12 px-6 border-white/30 text-white bg-transparent hover:bg-white/10 text-base">View pricing</Button></Link>
-              <Link to="/login" data-testid="footer-cta-login"><Button variant="outline" className="rounded-lg h-12 px-6 border-white/30 text-white bg-transparent hover:bg-white/10 text-base">Try demo</Button></Link>
+            <div className="rounded-lg border border-[#DDE4D7] bg-[#F7F8F5] p-5 shadow-sm">
+              <div className="rounded-lg bg-white border border-gray-200 p-4">
+                <p className="text-xs uppercase tracking-[0.16em] font-bold text-gray-500">Generated reminder</p>
+                <p className="mt-3 text-sm leading-relaxed text-gray-700">
+                  Hi Aarav Textiles team, this is a reminder that invoice INV-2041 for Rs. 1,84,000 is now 8 days overdue. Please confirm the expected payment date today so we can update our records.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="rounded-md bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 text-xs font-semibold">Firm</span>
+                  <span className="rounded-md bg-orange-50 text-orange-700 border border-orange-200 px-2.5 py-1 text-xs font-semibold">8d overdue</span>
+                  <span className="rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 text-xs font-semibold">Ready for WhatsApp</span>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </Section>
+          </Section>
+        </section>
 
-      <footer className="border-t border-gray-200 py-8">
-        <Section className="flex items-center justify-between flex-wrap gap-3">
-          <p className="text-sm text-gray-500">© 2026 PayGuard AI — Recover faster. Build calmer.</p>
-          <div className="flex items-center gap-4">
-            <Link to="/pricing" className="text-sm text-gray-500 hover:text-gray-700">Pricing</Link>
-            <Link to="/how-to-use" className="text-sm text-gray-500 hover:text-gray-700">How to Use</Link>
-            <p className="text-sm text-gray-500">Made for Indian MSMEs</p>
+        <Section className="py-16">
+          <div className="rounded-lg bg-[#0A3B2C] text-white p-6 sm:p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] font-bold text-white/60">Start with your next unpaid invoice</p>
+              <h2 className="font-display text-3xl font-semibold mt-3">Turn payment recovery into a repeatable workflow.</h2>
+            </div>
+            <Link to="/register">
+              <Button className="rounded-lg bg-white text-[#0A3B2C] hover:bg-emerald-50">Create account <ArrowRight className="w-4 h-4 ml-2" /></Button>
+            </Link>
           </div>
+        </Section>
+      </main>
+
+      <footer className="border-t border-[#E2E5DD] bg-white">
+        <Section className="h-16 flex items-center justify-between text-sm text-gray-500">
+          <Logo />
+          <p>© 2026 PayGuard AI</p>
         </Section>
       </footer>
     </div>
   );
 }
+
+const Proof = ({ label, value }) => (
+  <div>
+    <p className="font-display text-xl font-semibold">{value}</p>
+    <p className="text-xs text-white/62 mt-1">{label}</p>
+  </div>
+);
+
+const ProductPreview = () => (
+  <div className="rounded-lg border border-white/14 bg-white/10 p-3 shadow-2xl backdrop-blur">
+    <div className="rounded-lg bg-white text-gray-950 overflow-hidden">
+      <div className="border-b border-gray-200 px-5 py-4 flex items-center justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.16em] font-bold text-gray-500">Recovery queue</p>
+          <p className="font-display text-xl font-semibold mt-1">Invoices needing action</p>
+        </div>
+        <span className="rounded-md bg-orange-50 text-orange-700 border border-orange-200 px-2.5 py-1 text-xs font-semibold">₹4.26L overdue</span>
+      </div>
+      <div className="divide-y divide-gray-100">
+        {invoices.map((invoice) => (
+          <div key={invoice.id} className="px-5 py-4 grid grid-cols-12 gap-3 items-center">
+            <div className="col-span-5">
+              <p className="font-semibold text-sm">{invoice.customer}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{invoice.id}</p>
+            </div>
+            <div className="col-span-3">
+              <p className="text-sm font-semibold">{formatINR(invoice.amount)}</p>
+              <p className={`text-xs mt-0.5 ${invoice.due === "Paid" ? "text-emerald-700" : "text-orange-700"}`}>{invoice.due}</p>
+            </div>
+            <div className="col-span-2">
+              <span className={`rounded-md px-2 py-1 text-xs font-semibold ${invoice.risk === "High" ? "bg-orange-50 text-orange-700" : invoice.risk === "Medium" ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>{invoice.risk}</span>
+            </div>
+            <div className="col-span-2 text-right">
+              <p className="text-xs font-semibold text-[#0A3B2C]">{invoice.tone}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="bg-[#F7F8F5] border-t border-gray-200 p-5 grid sm:grid-cols-3 gap-3">
+        <MiniStat label="This week" value="₹1.18L" />
+        <MiniStat label="Likely delayed" value="₹86K" />
+        <MiniStat label="Recovered" value="₹2.9L" />
+      </div>
+    </div>
+  </div>
+);
+
+const MiniStat = ({ label, value }) => (
+  <div className="rounded-lg bg-white border border-gray-200 p-3">
+    <p className="text-xs text-gray-500">{label}</p>
+    <p className="font-display text-lg font-semibold mt-1">{value}</p>
+  </div>
+);

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { PageHeader, Surface } from "@/components/app/ProductUI";
 
 const TONES = ["Polite", "Professional", "Friendly", "Strict", "Final warning"];
 const TYPES = ["Gentle reminder before due date","Due date reminder","First overdue reminder","Strong overdue reminder","Final escalation warning","Relationship-friendly reminder","WhatsApp short message","Formal email message","Call script"];
@@ -68,12 +69,13 @@ export default function FollowupGenerator() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-3xl font-semibold tracking-tight" data-testid="followup-title">AI Follow-up Generator</h1>
-        <p className="text-gray-500 mt-1">Generate WhatsApp, email, and call scripts in seconds.</p>
-      </div>
+      <PageHeader
+        eyebrow="Payment reminders"
+        title="Follow-up generator"
+        description="Create customer-ready WhatsApp, email, and call scripts from invoice context, overdue days, and the tone you want to use."
+      />
 
-      <div className="bg-white border border-gray-200 rounded-xl p-6 grid md:grid-cols-3 gap-4">
+      <Surface className="p-6 grid md:grid-cols-3 gap-4">
         <div>
           <Label>Invoice</Label>
           <Select value={invoiceId} onValueChange={setInvoiceId}>
@@ -97,15 +99,21 @@ export default function FollowupGenerator() {
         </div>
         <div className="md:col-span-3">
           <Button onClick={generate} disabled={loading} className="bg-[#0A3B2C] hover:bg-[#072A1F] text-white w-full sm:w-auto" data-testid="followup-generate-btn">
-            <Sparkles className="w-4 h-4 mr-2" /> {loading ? "Generating with Claude…" : "Generate AI follow-up"}
+            <Sparkles className="w-4 h-4 mr-2" /> {loading ? "Drafting reminder…" : "Create payment reminder"}
           </Button>
         </div>
-      </div>
+      </Surface>
 
       {invoice && (
-        <div className="bg-gradient-to-br from-[#0A3B2C]/5 to-transparent border border-gray-200 rounded-xl p-5">
-          <p className="text-sm"><span className="font-medium">{invoice.customer?.business_name}</span> · {invoice.invoice_number} · {formatINR(invoice.total_amount)} · Due {formatDate(invoice.due_date)} {invoice.overdue_days > 0 && <span className="text-orange-700">({invoice.overdue_days}d overdue)</span>}</p>
-        </div>
+        <Surface className="p-5">
+          <p className="text-xs uppercase tracking-[0.16em] font-bold text-gray-500">Context used for this reminder</p>
+          <div className="mt-3 grid sm:grid-cols-4 gap-3 text-sm">
+            <Context label="Customer" value={invoice.customer?.business_name} />
+            <Context label="Invoice" value={invoice.invoice_number} />
+            <Context label="Pending value" value={formatINR(invoice.pending_amount || invoice.total_amount)} />
+            <Context label="Due date" value={`${formatDate(invoice.due_date)}${invoice.overdue_days > 0 ? ` · ${invoice.overdue_days}d overdue` : ""}`} danger={invoice.overdue_days > 0} />
+          </div>
+        </Surface>
       )}
 
       {out && (
@@ -130,7 +138,7 @@ const OutCard = ({ icon: Icon, title, subject, body, onCopy, onSave, waPhone, wa
   const sendLabel = waHref ? "Open in WhatsApp" : telHref ? "Call now" : null;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col">
+    <Surface className="p-5 flex flex-col">
       <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg bg-[#0A3B2C]/10 text-[#0A3B2C] flex items-center justify-center"><Icon className="w-4 h-4" /></div><h4 className="font-display text-lg font-medium">{title}</h4></div>
       {subject && <div className="mb-2"><p className="text-xs uppercase tracking-[0.15em] font-bold text-gray-500">Subject</p><p className="text-sm font-medium mt-1">{subject}</p></div>}
       <Textarea rows={8} value={body} readOnly className="text-sm bg-gray-50 resize-none flex-1" data-testid={`out-${title.toLowerCase().replace(/\s+/g,'-')}-body`} />
@@ -155,6 +163,13 @@ const OutCard = ({ icon: Icon, title, subject, body, onCopy, onSave, waPhone, wa
           {sendLabel}
         </a>
       ) : null}
-    </div>
+    </Surface>
   );
 };
+
+const Context = ({ label, value, danger }) => (
+  <div className="rounded-lg border border-gray-100 bg-[#FAFBF7] px-3 py-2">
+    <p className="text-xs text-gray-500">{label}</p>
+    <p className={`text-sm font-semibold mt-0.5 ${danger ? "text-orange-700" : "text-gray-950"}`}>{value || "Not available"}</p>
+  </div>
+);

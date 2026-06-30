@@ -26,27 +26,27 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#F9FAFB]">
+    <div className="min-h-screen flex bg-[#F7F8F5]">
       <div className="hidden lg:flex w-1/2 bg-[#0A3B2C] text-white p-12 flex-col justify-between relative overflow-hidden grain">
         <Link to="/" className="flex items-center gap-2.5 relative z-10">
           <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center"><ShieldCheck className="w-5 h-5" /></div>
-          <span className="font-display text-xl font-semibold tracking-tight">PayGuard AI</span>
+          <span className="font-display text-xl font-semibold tracking-normal">PayGuard AI</span>
         </Link>
         <div className="relative z-10 max-w-md">
-          <h2 className="font-display text-4xl font-medium tracking-tight leading-tight">Recover payments, protect cashflow.</h2>
-          <p className="mt-4 text-white/80">Track unpaid invoices, score customer risk, and generate AI follow-ups in seconds.</p>
+          <h2 className="font-display text-4xl font-medium tracking-normal leading-tight">Keep your recovery workspace protected.</h2>
+          <p className="mt-4 text-white/80">Reset your password and return to invoices, reminders, and payment proof.</p>
         </div>
         <p className="text-xs text-white/50 relative z-10">We will send a reset link to your registered email.</p>
       </div>
 
       <div className="flex-1 flex items-center justify-center p-6">
         {sent ? (
-          <div className="w-full max-w-md space-y-6 bg-white p-8 rounded-2xl border border-gray-200 shadow-sm text-center" data-testid="forgot-password-success">
+          <div className="w-full max-w-md space-y-6 bg-white p-8 rounded-lg border border-[#E2E5DD] shadow-sm text-center" data-testid="forgot-password-success">
             <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center mx-auto">
               <Mail className="w-7 h-7 text-emerald-600" />
             </div>
             <div>
-              <h1 className="font-display text-2xl font-semibold tracking-tight">Check your email</h1>
+              <h1 className="font-display text-2xl font-semibold tracking-normal">Check your email</h1>
               <p className="text-sm text-gray-500 mt-2 leading-relaxed">
                 We sent a password reset link to <span className="font-medium text-gray-900">{email}</span>.
                 The link will expire in 15 minutes.
@@ -62,9 +62,9 @@ export default function ForgotPassword() {
             </Link>
           </div>
         ) : (
-          <form onSubmit={submit} className="w-full max-w-md space-y-6 bg-white p-8 rounded-2xl border border-gray-200 shadow-sm" data-testid="forgot-password-form">
+          <form onSubmit={submit} className="w-full max-w-md space-y-6 bg-white p-8 rounded-lg border border-[#E2E5DD] shadow-sm" data-testid="forgot-password-form">
             <div>
-              <h1 className="font-display text-3xl font-semibold tracking-tight">Forgot password?</h1>
+              <h1 className="font-display text-3xl font-semibold tracking-normal">Forgot password?</h1>
               <p className="text-sm text-gray-500 mt-1.5">Enter your email and we will send you a reset link.</p>
             </div>
             <div className="space-y-4">

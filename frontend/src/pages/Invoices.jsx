@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge, RiskBadge } from "@/components/app/Badges";
 import EmptyState from "@/components/app/EmptyState";
+import { PageHeader } from "@/components/app/ProductUI";
 
 const STATUSES = ["All","Draft","Sent","Due Soon","Due Today","Overdue","Partially Paid","Paid","Disputed","Escalated"];
 
@@ -34,16 +35,16 @@ function InvoiceTable({ list, onDelete }) {
   return (
     <>
       {/* Desktop table */}
-      <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="hidden md:block pg-surface rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
-              <tr><th className="text-left px-5 py-3 font-medium">Invoice</th><th className="text-left px-5 py-3 font-medium">Customer</th><th className="text-left px-5 py-3 font-medium">Due</th><th className="text-left px-5 py-3 font-medium">Total</th><th className="text-left px-5 py-3 font-medium">Pending</th><th className="text-left px-5 py-3 font-medium">Status</th><th className="text-left px-5 py-3 font-medium">Risk</th><th /></tr>
+            <thead className="bg-[#F3F5EF] text-gray-600">
+              <tr><th className="text-left px-5 py-3 font-medium">Invoice</th><th className="text-left px-5 py-3 font-medium">Customer</th><th className="text-left px-5 py-3 font-medium">Due date</th><th className="text-left px-5 py-3 font-medium">Invoice value</th><th className="text-left px-5 py-3 font-medium">To collect</th><th className="text-left px-5 py-3 font-medium">Status</th><th className="text-left px-5 py-3 font-medium">Customer risk</th><th /></tr>
             </thead>
             <tbody>
               {list.length === 0 ? <tr><td colSpan={8} className="text-center py-12 text-gray-400">No invoices match your filters</td></tr> :
                 list.map((i) => (
-                  <tr key={i.id} className="border-t border-gray-100 hover:bg-gray-50/60" data-testid={`invoice-row-${i.id}`}>
+                  <tr key={i.id} className="border-t border-gray-100 pg-table-row" data-testid={`invoice-row-${i.id}`}>
                     <td className="px-5 py-3"><Link className="font-medium text-gray-900 hover:text-[#0A3B2C]" to={`/app/invoices/${i.id}`}>{i.invoice_number}</Link></td>
                     <td className="px-5 py-3 text-gray-700">{i.customer_name}</td>
                     <td className="px-5 py-3">{formatDate(i.due_date)}{i.overdue_days > 0 && <p className="text-xs text-orange-600 mt-0.5">{i.overdue_days}d overdue</p>}</td>
@@ -64,7 +65,7 @@ function InvoiceTable({ list, onDelete }) {
         {list.length === 0 ? (
           <div className="text-center py-12 text-gray-400 text-sm">No invoices match your filters</div>
         ) : list.map((i) => (
-          <div key={i.id} className="bg-white rounded-xl border border-gray-200 p-4 space-y-3" data-testid={`invoice-card-${i.id}`}>
+          <div key={i.id} className="pg-surface rounded-lg p-4 space-y-3" data-testid={`invoice-card-${i.id}`}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <Link className="font-medium text-gray-900 hover:text-[#0A3B2C] block truncate" to={`/app/invoices/${i.id}`}>{i.invoice_number}</Link>
@@ -147,12 +148,12 @@ function CreateInvoiceDialog({ open, setOpen, customers, onCreated }) {
       </DialogTrigger>
       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>New invoice</DialogTitle>
-          <DialogDescription>Add invoice details manually, or upload a PDF/image and let AI auto-fill the fields.</DialogDescription>
+          <DialogTitle>New receivable</DialogTitle>
+          <DialogDescription>Add the invoice PayGuard should track for due dates, risk, reminders, and payment proof.</DialogDescription>
         </DialogHeader>
         <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-[#0A3B2C]/30 rounded-lg bg-[#0A3B2C]/5 text-[#0A3B2C] hover:bg-[#0A3B2C]/10 cursor-pointer transition-colors" data-testid="inv-form-ocr-upload">
           {ocrLoading ? <Sparkles className="w-4 h-4 animate-pulse" /> : <Upload className="w-4 h-4" />}
-          <span className="text-sm font-medium">{ocrLoading ? "Extracting with AI…" : "Upload invoice PDF/image — AI auto-fill"}</span>
+          <span className="text-sm font-medium">{ocrLoading ? "Reading invoice…" : "Upload invoice PDF/image to pre-fill"}</span>
           <input type="file" accept="application/pdf,image/png,image/jpeg,image/jpg,image/webp" className="hidden" onChange={onOcrUpload} disabled={ocrLoading} />
         </label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -170,7 +171,7 @@ function CreateInvoiceDialog({ open, setOpen, customers, onCreated }) {
           <div className="sm:col-span-2"><Label>Due date</Label><Input type="date" data-testid="inv-form-due-date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} /></div>
           <div className="sm:col-span-2"><Label>Description</Label><Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
         </div>
-        <Button data-testid="inv-form-save-btn" onClick={create} className="bg-[#0A3B2C] hover:bg-[#072A1F] text-white">Create invoice</Button>
+        <Button data-testid="inv-form-save-btn" onClick={create} className="bg-[#0A3B2C] hover:bg-[#072A1F] text-white">Start tracking invoice</Button>
       </DialogContent>
     </Dialog>
   );
@@ -194,21 +195,20 @@ export default function Invoices() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight" data-testid="invoices-title">Invoices</h1>
-          <p className="text-gray-500 mt-1">{list.length} {status === "All" ? "total" : status.toLowerCase()}</p>
-        </div>
-        <CreateInvoiceDialog open={open} setOpen={setOpen} customers={customers} onCreated={load} />
-      </div>
+      <PageHeader
+        eyebrow="Receivables"
+        title="Invoices"
+        description={`${list.length} ${status === "All" ? "tracked invoices" : `${status.toLowerCase()} invoices`} across your customer ledger.`}
+        action={<CreateInvoiceDialog open={open} setOpen={setOpen} customers={customers} onCreated={load} />}
+      />
 
       <InvoiceFilters search={search} setSearch={setSearch} status={status} setStatus={setStatus} />
 
       {list.length === 0 && !search && status === "All" ? (
         <EmptyState
           icon={FileTextIcon}
-          title="No invoices yet"
-          description="Add your first invoice and PayGuard will auto-track due dates, overdue status, and generate AI follow-ups."
+          title="No invoices are being tracked yet"
+          description="Add an invoice to monitor due dates, pending amount, customer risk, and the next payment reminder."
           actionLabel="Create your first invoice"
           onAction={() => setOpen(true)}
           testid="invoices-empty-state"

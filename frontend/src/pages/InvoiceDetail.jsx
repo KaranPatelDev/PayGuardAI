@@ -10,22 +10,23 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge, RiskBadge } from "@/components/app/Badges";
+import { Surface } from "@/components/app/ProductUI";
 
 const KV = ({ label, value }) => (
   <div><p className="text-xs uppercase tracking-[0.15em] font-bold text-gray-500">{label}</p><p className="text-sm font-medium text-gray-900 mt-1">{value}</p></div>
 );
 
 const Panel = ({ title, children }) => (
-  <div className="bg-white border border-gray-200 rounded-xl p-5"><h4 className="font-display text-lg font-medium mb-3">{title}</h4><div className="space-y-3">{children}</div></div>
+  <Surface className="p-5"><h4 className="font-display text-lg font-medium mb-3">{title}</h4><div className="space-y-3">{children}</div></Surface>
 );
 
 function InvoiceHeader({ inv }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
+    <Surface className="p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.15em] font-bold text-gray-500">Invoice</p>
-          <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight" data-testid="invoice-number">{inv.invoice_number}</h1>
+          <p className="text-xs uppercase tracking-[0.15em] font-bold text-gray-500">Invoice recovery file</p>
+          <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-normal" data-testid="invoice-number">{inv.invoice_number}</h1>
           {inv.customer && <Link to={`/app/customers/${inv.customer.id}`} className="text-gray-600 hover:text-[#0A3B2C]">{inv.customer.business_name}</Link>}
           <div className="flex flex-wrap gap-2 mt-3"><StatusBadge status={inv.status} />{inv.customer && <RiskBadge risk={inv.customer.risk_category} />}</div>
         </div>
@@ -43,7 +44,7 @@ function InvoiceHeader({ inv }) {
         <KV label="Tax" value={formatINR(inv.tax_amount)} />
         <KV label="Description" value={inv.description || "—"} />
       </div>
-    </div>
+    </Surface>
   );
 }
 
@@ -54,7 +55,7 @@ function PaymentDialog({ payOpen, setPayOpen, pay, setPay, onSave }) {
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Record payment</DialogTitle>
-          <DialogDescription>Enter the payment details to update this invoice's pending amount.</DialogDescription>
+          <DialogDescription>Record recovered cash and update this invoice's pending amount.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div><Label>Amount (₹)</Label><Input type="number" value={pay.amount} onChange={(e) => setPay({ ...pay, amount: +e.target.value })} data-testid="pay-amount" /></div>
@@ -76,7 +77,7 @@ function PaymentDialog({ payOpen, setPayOpen, pay, setPay, onSave }) {
 function InvoiceActions({ inv, id, payOpen, setPayOpen, pay, setPay, onAddPayment, onMarkPaid, onSetStatus }) {
   return (
     <div className="mt-6 flex flex-wrap gap-2">
-      <Link to="/app/followups" state={{ invoiceId: id }}><Button className="bg-[#0A3B2C] hover:bg-[#072A1F] text-white" data-testid="btn-generate-followup"><Sparkles className="w-4 h-4 mr-2" /> Generate AI follow-up</Button></Link>
+      <Link to="/app/followups" state={{ invoiceId: id }}><Button className="bg-[#0A3B2C] hover:bg-[#072A1F] text-white" data-testid="btn-generate-followup"><Sparkles className="w-4 h-4 mr-2" /> Create payment reminder</Button></Link>
       <PaymentDialog payOpen={payOpen} setPayOpen={setPayOpen} pay={pay} setPay={setPay} onSave={onAddPayment} />
       {inv.pending_amount > 0 && <Button variant="outline" onClick={onMarkPaid} data-testid="btn-mark-paid">Mark fully paid</Button>}
       {inv.status !== "Disputed" && <Button variant="outline" onClick={() => onSetStatus("Disputed")}>Mark disputed</Button>}
@@ -87,8 +88,8 @@ function InvoiceActions({ inv, id, payOpen, setPayOpen, pay, setPay, onAddPaymen
 
 function RecoveryTimeline({ timeline }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6">
-      <h3 className="font-display text-xl font-medium mb-4">Smart Recovery Timeline</h3>
+    <Surface className="p-6">
+      <h3 className="font-display text-xl font-medium mb-4">Recovery timeline</h3>
       <ol className="relative border-l-2 border-gray-200 ml-3 space-y-5">
         {timeline.map((t) => {
           const Icon = t.status === "completed" ? CheckCircle2 : t.status === "due" ? Clock : Circle;
@@ -102,7 +103,7 @@ function RecoveryTimeline({ timeline }) {
           );
         })}
       </ol>
-    </div>
+    </Surface>
   );
 }
 
@@ -157,7 +158,7 @@ export default function InvoiceDetail() {
 
   const setStatus = async (s) => { await api.put(`/invoices/${id}`, { status: s }); toast.success(`Marked ${s}`); load(); };
 
-  if (!inv) return <div className="h-32 bg-gray-200 animate-pulse rounded-xl" />;
+  if (!inv) return <div className="h-32 bg-gray-200 animate-pulse rounded-lg" />;
 
   return (
     <div className="space-y-6">

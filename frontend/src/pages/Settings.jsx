@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PageHeader, Surface } from "@/components/app/ProductUI";
 
 export default function Settings() {
   const [s, setS] = useState(null);
@@ -21,15 +22,16 @@ export default function Settings() {
     toast.success("Settings saved");
   };
 
-  if (!s) return <div className="h-32 bg-gray-200 animate-pulse rounded-xl" />;
+  if (!s) return <div className="h-32 bg-gray-200 animate-pulse rounded-lg" />;
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div>
-        <h1 className="font-display text-3xl font-semibold tracking-tight" data-testid="settings-title">Settings</h1>
-        <p className="text-gray-500 mt-1">Defaults that power your reminders and AI tone.</p>
-      </div>
-      <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
+      <PageHeader
+        eyebrow="Defaults"
+        title="Settings"
+        description="Set the reminder defaults PayGuard uses when creating invoices and follow-up drafts."
+      />
+      <Surface className="p-6 space-y-4">
         <div><Label>Default payment terms (days)</Label><Input type="number" value={s.default_payment_terms} onChange={(e) => setS({ ...s, default_payment_terms: +e.target.value })} className="mt-1.5" /></div>
         <div><Label>Default follow-up tone</Label>
           <Select value={s.default_followup_tone} onValueChange={(v) => setS({ ...s, default_followup_tone: v })}>
@@ -44,8 +46,8 @@ export default function Settings() {
           </Select>
         </div>
         <div><Label>Currency</Label><Input value="INR (₹)" disabled className="mt-1.5" /></div>
-        <Button onClick={save} className="bg-[#0A3B2C] hover:bg-[#072A1F] text-white" data-testid="settings-save-btn">Save settings</Button>
-      </div>
+        <Button onClick={save} className="bg-[#0A3B2C] hover:bg-[#072A1F] text-white" data-testid="settings-save-btn">Save reminder defaults</Button>
+      </Surface>
     </div>
   );
 }

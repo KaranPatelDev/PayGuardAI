@@ -26,7 +26,7 @@ function SidebarNav({ onNavClick }) {
 
   return (
     <>
-      <div className="h-16 px-6 flex items-center border-b border-gray-200">
+      <div className="h-16 px-6 flex items-center border-b border-[#E2E5DD]">
         <div className="w-8 h-8 rounded-lg bg-[#0A3B2C] flex items-center justify-center">
           <ShieldCheck className="w-5 h-5 text-white" />
         </div>
@@ -42,8 +42,8 @@ function SidebarNav({ onNavClick }) {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-[#0A3B2C] text-white"
-                  : "text-gray-700 hover:bg-gray-100"
+                  ? "bg-[#0A3B2C] text-white shadow-sm"
+                  : "text-gray-700 hover:bg-[#F3F5EF]"
               }`
             }
           >
@@ -52,11 +52,11 @@ function SidebarNav({ onNavClick }) {
           </NavLink>
         ))}
       </nav>
-      <div className="p-3 border-t border-gray-200">
+      <div className="p-3 border-t border-[#E2E5DD]">
         <button
           data-testid="btn-logout"
           onClick={() => { doLogout(); onNavClick?.(); }}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-[#F3F5EF]"
         >
           <LogOut className="w-4 h-4" /> Log out
         </button>
@@ -70,19 +70,19 @@ export default function AppShell({ children }) {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] flex">
+    <div className="min-h-screen pg-shell-bg flex">
       {/* Desktop Sidebar */}
-      <aside className="w-64 flex-shrink-0 border-r border-gray-200 bg-white hidden md:flex flex-col" data-testid="app-sidebar">
+      <aside className="w-64 flex-shrink-0 border-r border-[#E2E5DD] bg-white/92 backdrop-blur hidden md:flex flex-col" data-testid="app-sidebar">
         <SidebarNav />
       </aside>
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 border-b border-gray-200 bg-white/70 backdrop-blur-xl sticky top-0 z-40 flex items-center px-4 sm:px-6 justify-between gap-3">
+        <header className="h-16 border-b border-[#E2E5DD] bg-white/80 backdrop-blur-xl sticky top-0 z-40 flex items-center px-4 sm:px-6 justify-between gap-3">
           {/* Mobile hamburger */}
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
-              <button className="md:hidden p-2 -ml-2 rounded-lg hover:bg-gray-100" data-testid="mobile-menu-btn" aria-label="Open menu">
+              <button className="md:hidden p-2 -ml-2 rounded-lg hover:bg-[#F3F5EF]" data-testid="mobile-menu-btn" aria-label="Open menu">
                 <Menu className="w-5 h-5 text-gray-700" />
               </button>
             </SheetTrigger>
@@ -93,11 +93,11 @@ export default function AppShell({ children }) {
           </Sheet>
 
           <div className="min-w-0">
-            <p className="text-xs text-gray-500 font-medium truncate">{user?.business_name}</p>
-            <p className="text-sm font-display font-medium text-gray-900 truncate">{user?.business_type || "Business"}</p>
+            <p className="text-xs text-gray-500 font-medium truncate">Recovery workspace</p>
+            <p className="text-sm font-display font-medium text-gray-900 truncate">{user?.business_name || user?.business_type || "Business"}</p>
           </div>
           <div className="flex items-center gap-3">
-            <NavLink to="/app/profile" data-testid="nav-profile" className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100">
+            <NavLink to="/app/profile" data-testid="nav-profile" className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-[#F3F5EF]">
               <div className="w-8 h-8 rounded-full bg-[#0A3B2C] text-white flex items-center justify-center text-sm font-medium shrink-0">
                 {user?.full_name?.[0]?.toUpperCase() || "U"}
               </div>

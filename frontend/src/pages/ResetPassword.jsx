@@ -19,23 +19,23 @@ export default function ResetPassword() {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex bg-[#F9FAFB]">
+      <div className="min-h-screen flex bg-[#F7F8F5]">
         <div className="hidden lg:flex w-1/2 bg-[#0A3B2C] text-white p-12 flex-col justify-between relative overflow-hidden grain">
           <Link to="/" className="flex items-center gap-2.5 relative z-10">
             <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center"><ShieldCheck className="w-5 h-5" /></div>
-            <span className="font-display text-xl font-semibold tracking-tight">PayGuard AI</span>
+            <span className="font-display text-xl font-semibold tracking-normal">PayGuard AI</span>
           </Link>
           <div className="relative z-10 max-w-md">
-            <h2 className="font-display text-4xl font-medium tracking-tight leading-tight">Recover payments, protect cashflow.</h2>
+            <h2 className="font-display text-4xl font-medium tracking-normal leading-tight">Keep your recovery workspace protected.</h2>
           </div>
         </div>
         <div className="flex-1 flex items-center justify-center p-6">
-          <div className="w-full max-w-md space-y-6 bg-white p-8 rounded-2xl border border-gray-200 shadow-sm text-center" data-testid="reset-password-no-token">
+          <div className="w-full max-w-md space-y-6 bg-white p-8 rounded-lg border border-[#E2E5DD] shadow-sm text-center" data-testid="reset-password-no-token">
             <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto">
               <Lock className="w-7 h-7 text-red-500" />
             </div>
             <div>
-              <h1 className="font-display text-2xl font-semibold tracking-tight">Invalid link</h1>
+              <h1 className="font-display text-2xl font-semibold tracking-normal">Invalid link</h1>
               <p className="text-sm text-gray-500 mt-2">This password reset link is invalid or missing.</p>
             </div>
             <Link to="/forgot-password">
@@ -71,33 +71,33 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#F9FAFB]">
+    <div className="min-h-screen flex bg-[#F7F8F5]">
       <div className="hidden lg:flex w-1/2 bg-[#0A3B2C] text-white p-12 flex-col justify-between relative overflow-hidden grain">
         <Link to="/" className="flex items-center gap-2.5 relative z-10">
           <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center"><ShieldCheck className="w-5 h-5" /></div>
-          <span className="font-display text-xl font-semibold tracking-tight">PayGuard AI</span>
+          <span className="font-display text-xl font-semibold tracking-normal">PayGuard AI</span>
         </Link>
         <div className="relative z-10 max-w-md">
-          <h2 className="font-display text-4xl font-medium tracking-tight leading-tight">Recover payments, protect cashflow.</h2>
-          <p className="mt-4 text-white/80">Set a new password and get back to recovering payments.</p>
+          <h2 className="font-display text-4xl font-medium tracking-normal leading-tight">Set a new password and continue recovery work.</h2>
+          <p className="mt-4 text-white/80">Get back to invoices, reminders, and payment proof without losing context.</p>
         </div>
       </div>
 
       <div className="flex-1 flex items-center justify-center p-6">
         {success ? (
-          <div className="w-full max-w-md space-y-6 bg-white p-8 rounded-2xl border border-gray-200 shadow-sm text-center" data-testid="reset-password-success">
+          <div className="w-full max-w-md space-y-6 bg-white p-8 rounded-lg border border-[#E2E5DD] shadow-sm text-center" data-testid="reset-password-success">
             <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-7 h-7 text-emerald-600" />
             </div>
             <div>
-              <h1 className="font-display text-2xl font-semibold tracking-tight">Password reset!</h1>
+              <h1 className="font-display text-2xl font-semibold tracking-normal">Password reset</h1>
               <p className="text-sm text-gray-500 mt-2">Redirecting you to sign in…</p>
             </div>
           </div>
         ) : (
-          <form onSubmit={submit} className="w-full max-w-md space-y-6 bg-white p-8 rounded-2xl border border-gray-200 shadow-sm" data-testid="reset-password-form">
+          <form onSubmit={submit} className="w-full max-w-md space-y-6 bg-white p-8 rounded-lg border border-[#E2E5DD] shadow-sm" data-testid="reset-password-form">
             <div>
-              <h1 className="font-display text-3xl font-semibold tracking-tight">Set new password</h1>
+              <h1 className="font-display text-3xl font-semibold tracking-normal">Set new password</h1>
               <p className="text-sm text-gray-500 mt-1.5">Choose a strong password for your account.</p>
             </div>
             <div className="space-y-4">

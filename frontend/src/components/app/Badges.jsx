@@ -5,7 +5,7 @@ export const StatusBadge = ({ status, testid }) => {
   return (
     <span
       data-testid={testid || `status-badge-${status?.toLowerCase().replace(/\s+/g, "-")}`}
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${s.bg} ${s.text} ${s.border}`}
+      className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold border ${s.bg} ${s.text} ${s.border}`}
     >
       {status}
     </span>
@@ -17,7 +17,7 @@ export const RiskBadge = ({ risk, testid }) => {
   return (
     <span
       data-testid={testid || `risk-badge-${risk?.toLowerCase().replace(/\s+/g, "-")}`}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${s.bg} ${s.text} ${s.border}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border ${s.bg} ${s.text} ${s.border}`}
     >
       <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
       {risk}

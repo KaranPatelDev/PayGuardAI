@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RiskBadge } from "@/components/app/Badges";
 import EmptyState from "@/components/app/EmptyState";
+import { PageHeader } from "@/components/app/ProductUI";
 
 const empty = { business_name: "", contact_person: "", email: "", phone: "", city: "", state: "", gst_number: "", payment_terms: 30, credit_limit: 0, notes: "" };
 
@@ -36,17 +37,17 @@ function CustomerTable({ list, onEdit, onDelete }) {
   return (
     <>
       {/* Desktop table */}
-      <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="hidden md:block pg-surface rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
-              <tr><th className="text-left px-5 py-3 font-medium">Business</th><th className="text-left px-5 py-3 font-medium">Contact</th><th className="text-left px-5 py-3 font-medium">Pending</th><th className="text-left px-5 py-3 font-medium">Invoices</th><th className="text-left px-5 py-3 font-medium">Risk</th><th className="px-5 py-3" /></tr>
+            <thead className="bg-[#F3F5EF] text-gray-600">
+              <tr><th className="text-left px-5 py-3 font-medium">Customer account</th><th className="text-left px-5 py-3 font-medium">Primary contact</th><th className="text-left px-5 py-3 font-medium">Pending balance</th><th className="text-left px-5 py-3 font-medium">Open invoices</th><th className="text-left px-5 py-3 font-medium">Payment risk</th><th className="px-5 py-3" /></tr>
             </thead>
             <tbody>
               {list.length === 0 ? (
                 <tr><td colSpan={6} className="text-center py-12 text-gray-400">No customers match your filters.</td></tr>
               ) : list.map((c) => (
-                <tr key={c.id} className="border-t border-gray-100 hover:bg-gray-50/60" data-testid={`customer-row-${c.id}`}>
+                <tr key={c.id} className="border-t border-gray-100 pg-table-row" data-testid={`customer-row-${c.id}`}>
                   <td className="px-5 py-3"><Link to={`/app/customers/${c.id}`} className="font-medium text-gray-900 hover:text-[#0A3B2C]">{c.business_name}</Link><p className="text-xs text-gray-500">{c.city}{c.state ? `, ${c.state}` : ""}</p></td>
                   <td className="px-5 py-3">{c.contact_person || "—"}<p className="text-xs text-gray-500">{c.phone}</p></td>
                   <td className="px-5 py-3 font-medium">{formatINR(c.total_pending || 0)}</td>
@@ -68,7 +69,7 @@ function CustomerTable({ list, onEdit, onDelete }) {
         {list.length === 0 ? (
           <div className="text-center py-12 text-gray-400 text-sm">No customers match your filters.</div>
         ) : list.map((c) => (
-          <div key={c.id} className="bg-white rounded-xl border border-gray-200 p-4 space-y-3" data-testid={`customer-card-${c.id}`}>
+          <div key={c.id} className="pg-surface rounded-lg p-4 space-y-3" data-testid={`customer-card-${c.id}`}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <Link to={`/app/customers/${c.id}`} className="font-medium text-gray-900 hover:text-[#0A3B2C] block truncate">{c.business_name}</Link>
@@ -119,8 +120,8 @@ function CustomerDialog({ open, setOpen, editing, onSave }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editing ? "Edit" : "Add"} customer</DialogTitle>
-          <DialogDescription>{editing ? "Update this customer's details." : "Add a new customer to start tracking their invoices and risk."}</DialogDescription>
+          <DialogTitle>{editing ? "Edit customer account" : "Add customer account"}</DialogTitle>
+          <DialogDescription>{editing ? "Update contact, credit, and payment terms for recovery decisions." : "Create the customer ledger PayGuard will use for invoices, reminders, and risk history."}</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="sm:col-span-2"><Label>Business name</Label><Input data-testid="cust-form-business-name" value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} /></div>
@@ -133,7 +134,7 @@ function CustomerDialog({ open, setOpen, editing, onSave }) {
           <div><Label>Payment terms (days)</Label><Input type="number" value={form.payment_terms} onChange={(e) => setForm({ ...form, payment_terms: +e.target.value })} /></div>
           <div className="sm:col-span-2"><Label>Credit limit (₹)</Label><Input type="number" value={form.credit_limit} onChange={(e) => setForm({ ...form, credit_limit: +e.target.value })} /></div>
         </div>
-        <Button data-testid="cust-form-save-btn" onClick={save} className="bg-[#0A3B2C] hover:bg-[#072A1F] text-white">Save</Button>
+        <Button data-testid="cust-form-save-btn" onClick={save} className="bg-[#0A3B2C] hover:bg-[#072A1F] text-white">Save customer account</Button>
       </DialogContent>
     </Dialog>
   );
@@ -161,27 +162,28 @@ export default function Customers() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight" data-testid="customers-title">Customers</h1>
-          <p className="text-gray-500 mt-1">{list.length} total</p>
-        </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+      <PageHeader
+        eyebrow="Customer ledger"
+        title="Customers"
+        description={`${list.length} customer accounts with payment terms, outstanding balances, and risk history.`}
+        action={(
+          <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button data-testid="btn-add-customer" onClick={openCreate} className="bg-[#0A3B2C] hover:bg-[#072A1F] text-white rounded-lg">
               <Plus className="w-4 h-4 mr-2" /> Add customer
             </Button>
           </DialogTrigger>
         </Dialog>
-      </div>
+        )}
+      />
 
       <CustomerFilters search={search} setSearch={setSearch} riskFilter={riskFilter} setRiskFilter={setRiskFilter} />
 
       {showEmpty ? (
         <EmptyState
           icon={UsersIcon}
-          title="No customers yet"
-          description="Add your first customer to start tracking invoices, payments, and risk."
+          title="No customer ledger yet"
+          description="Add a customer before creating invoices so PayGuard can connect reminders, payments, and risk history to the right account."
           actionLabel="Add your first customer"
           onAction={openCreate}
           testid="customers-empty-state"

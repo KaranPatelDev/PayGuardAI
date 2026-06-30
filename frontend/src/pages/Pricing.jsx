@@ -171,7 +171,7 @@ function SavingsBadge({ plan, billing }) {
   const pct = Math.round(((fullPrice - discountedPrice) / fullPrice) * 100);
   if (pct <= 0) return null;
   return (
-    <span className="absolute -top-3 right-4 bg-emerald-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm">
+    <span className="absolute -top-3 right-4 bg-emerald-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-md shadow-sm">
       Save {pct}%
     </span>
   );
@@ -203,7 +203,7 @@ function BillingToggle({ billing, setBilling }) {
 function PlanCard({ plan, billing }) {
   return (
     <div
-      className={`relative flex flex-col rounded-2xl border p-6 transition-all ${
+      className={`relative flex flex-col rounded-lg border p-6 transition-all ${
         plan.popular
           ? "border-[#0A3B2C] shadow-lg ring-1 ring-[#0A3B2C]/10 scale-[1.02]"
           : "border-gray-200 hover:border-gray-300 hover:shadow-md"
@@ -211,8 +211,8 @@ function PlanCard({ plan, billing }) {
     >
       {plan.popular && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="bg-[#0A3B2C] text-white text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1">
-            <Sparkles className="w-3 h-3" /> Most Popular
+          <span className="bg-[#0A3B2C] text-white text-[11px] font-bold px-3 py-1 rounded-md flex items-center gap-1">
+            <Sparkles className="w-3 h-3" /> Best for active recovery
           </span>
         </div>
       )}
@@ -306,7 +306,7 @@ function PricingFAQ() {
   return (
     <div className="space-y-4">
       {faqs.map(([question, answer]) => (
-        <div key={question} className="rounded-xl bg-white border border-gray-200 p-5">
+        <div key={question} className="rounded-lg bg-white border border-gray-200 p-5">
           <div className="flex items-start gap-3">
             <HelpCircle className="w-5 h-5 text-[#0A3B2C] mt-0.5 flex-shrink-0" />
             <div>
@@ -324,15 +324,15 @@ export default function Pricing({ embedded = false }) {
   const [billing, setBilling] = useState("monthly");
 
   return (
-    <div className={embedded ? "" : "bg-[#F9FAFB] min-h-screen"}>
+    <div className={embedded ? "" : "bg-[#F7F8F5] min-h-screen"}>
       {!embedded && (
-        <header className="sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-gray-200">
+        <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-[#E2E5DD]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <Link to="/" className="flex items-center gap-2.5" data-testid="pricing-logo">
               <div className="w-8 h-8 rounded-lg bg-[#0A3B2C] flex items-center justify-center">
                 <ShieldCheck className="w-5 h-5 text-white" />
               </div>
-              <span className="font-display text-lg font-semibold tracking-tight">PayGuard AI</span>
+              <span className="font-display text-lg font-semibold tracking-normal">PayGuard AI</span>
             </Link>
             <div className="flex items-center gap-2">
               <Link to="/how-to-use" data-testid="pricing-how-to-use-link"><Button variant="ghost" className="rounded-lg">How to Use</Button></Link>
@@ -346,13 +346,13 @@ export default function Pricing({ embedded = false }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div className="text-center">
           <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-[#0A3B2C]/10 text-[#0A3B2C] border border-[#0A3B2C]/20">
-            <ShieldCheck className="w-3.5 h-3.5" /> Trusted by 200+ Indian MSMEs
+            <ShieldCheck className="w-3.5 h-3.5" /> Pricing for receivables teams
           </span>
-          <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight mt-5">
-            Simple, transparent pricing
+          <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-normal mt-5">
+            Choose the recovery workflow your business needs
           </h1>
           <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
-            Start free, upgrade when you need more. All plans include core invoice tracking and customer management.
+            Start with invoice tracking, then upgrade when you need more reminders, OCR, reports, team members, and cashflow forecasting.
           </p>
           <div className="mt-8 flex justify-center">
             <BillingToggle billing={billing} setBilling={setBilling} />
@@ -365,7 +365,7 @@ export default function Pricing({ embedded = false }) {
           ))}
         </div>
 
-        <div className="mt-16 bg-white rounded-2xl border border-gray-200 p-6 sm:p-8">
+        <div className="mt-16 bg-white rounded-lg border border-gray-200 p-6 sm:p-8">
           <h2 className="font-display text-2xl font-semibold text-gray-900 text-center">Compare all features</h2>
           <p className="text-center text-gray-500 mt-2">Every plan includes core invoice tracking. Paid plans unlock AI recovery features.</p>
           <div className="mt-8">
