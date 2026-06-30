@@ -140,3 +140,92 @@ async def send_password_reset_email(to_email: str, user_name: str, token: str) -
             extra={"event": "email.password_reset_failed", "to": to_email, "error": str(exc)},
         )
         return False
+
+
+def _build_followup_email(customer_name: str, subject: str, body: str, business_name: str) -> MIMEMultipart:
+    msg = MIMEMultipart("alternative")
+    msg["From"] = f"{business_name} via PayGuard AI <{SMTP_USER}>"
+    msg["Subject"] = subject
+
+    html_body = f"""\
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background-color:#F9FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#F9FAFB;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border-radius:12px;border:1px solid #E5E7EB;overflow:hidden;">
+          <tr>
+            <td style="background-color:#0A3B2C;padding:20px 28px;">
+              <h1 style="margin:0;color:#ffffff;font-size:18px;font-weight:600;">
+                {business_name}
+              </h1>
+              <p style="margin:4px 0 0;color:#A7F3D0;font-size:12px;">Payment Follow-up via PayGuard AI</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px;">
+              <p style="margin:0 0 16px;color:#374151;font-size:14px;line-height:1.7;">
+                {body}
+              </p>
+              <p style="margin:0;color:#374151;font-size:14px;line-height:1.7;">
+                Regards,<br/>{business_name}
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:14px 28px;border-top:1px solid #E5E7EB;text-align:center;">
+              <p style="margin:0;color:#9CA3AF;font-size:11px;">
+                Sent via PayGuard AI &mdash; AI-powered payment recovery for Indian MSMEs.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+"""
+    msg.attach(MIMEText(body, "plain", "utf-8"))
+    msg.attach(MIMEText(html_body, "html", "utf-8"))
+    return msg
+
+
+async def send_followup_email(
+    to_email: str, customer_name: str, subject: str, body: str, business_name: str
+) -> bool:
+    if not SMTP_USER or not SMTP_PASS or SMTP_USER == "your_gmail@gmail.com":
+        logger.warning(
+            "SMTP not configured — cannot send follow-up email",
+            extra={"event": "email.followup.smtp_not_configured", "to": to_email},
+        )
+        return False
+
+    try:
+        msg = _build_followup_email(customer_name, subject, body, business_name)
+        msg["To"] = to_email
+
+        await aiosmtplib.send(
+            msg,
+            hostname=SMTP_HOST,
+            port=SMTP_PORT,
+            start_tls=True,
+            username=SMTP_USER,
+            password=SMTP_PASS,
+        )
+        logger.info(
+            "Follow-up email sent",
+            extra={"event": "email.followup_sent", "to": to_email, "customer": customer_name},
+        )
+        return True
+    except Exception as exc:
+        logger.error(
+            "Failed to send follow-up email",
+            extra={"event": "email.followup_failed", "to": to_email, "error": str(exc)},
+        )
+        return False

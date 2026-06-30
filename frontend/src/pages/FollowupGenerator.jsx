@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { api } from "@/lib/api";
 import { formatINR, formatDate } from "@/lib/format";
 import { toast } from "sonner";
-import { Sparkles, Copy, Send, MessageSquare, Mail, Phone } from "lucide-react";
+import { Sparkles, Copy, Send, MessageSquare, Mail, Phone, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -22,16 +22,20 @@ export default function FollowupGenerator() {
   const [loading, setLoading] = useState(false);
   const [out, setOut] = useState(null);
   const [invoice, setInvoice] = useState(null);
+  const [followupId, setFollowupId] = useState(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   useEffect(() => { api.get("/invoices", { params: { status: undefined } }).then((r) => setInvoices(r.data.filter(i => i.pending_amount > 0))); }, []);
   useEffect(() => { if (invoiceId) api.get(`/invoices/${invoiceId}`).then(r => setInvoice(r.data)); }, [invoiceId]);
 
   const generate = async () => {
     if (!invoiceId) return toast.error("Select an invoice");
-    setLoading(true); setOut(null);
+    setLoading(true); setOut(null); setFollowupId(null); setEmailSent(false);
     try {
       const { data } = await api.post("/ai/generate-followup", { invoice_id: invoiceId, tone, message_type: type });
       setOut(data);
+      setFollowupId(data.followup_id || null);
     } catch (e) { toast.error("Generation failed"); }
     finally { setLoading(false); }
   };
@@ -45,6 +49,19 @@ export default function FollowupGenerator() {
       channel, tone, status: "Sent",
     });
     toast.success(`Saved ${channel} follow-up to proof trail`);
+  };
+
+  const sendEmail = async () => {
+    if (!followupId) return toast.error("No follow-up saved yet");
+    setSendingEmail(true);
+    try {
+      const { data } = await api.post(`/followups/${followupId}/send-email`);
+      setEmailSent(true);
+      toast.success(data.message || "Email sent successfully!");
+    } catch (e) {
+      const msg = e?.response?.data?.detail || "Failed to send email";
+      toast.error(msg);
+    } finally { setSendingEmail(false); }
   };
 
   const copy = (text, label) => { navigator.clipboard.writeText(text); toast.success(`${label} copied`); };
@@ -94,7 +111,7 @@ export default function FollowupGenerator() {
       {out && (
         <div className="grid md:grid-cols-3 gap-4 animate-fade-up" data-testid="followup-output">
           <OutCard icon={MessageSquare} title="WhatsApp" body={out.whatsapp} onCopy={() => copy(out.whatsapp, "WhatsApp")} onSave={() => save("WhatsApp")} waPhone={invoice?.customer?.phone} waMessage={out.whatsapp} />
-          <OutCard icon={Mail} title="Email" subject={out.email_subject} body={out.email_body} onCopy={() => copy(`${out.email_subject}\n\n${out.email_body}`, "Email")} onSave={() => save("Email")} mailTo={invoice?.customer?.email} mailSubject={out.email_subject} mailBody={out.email_body} />
+          <OutCard icon={Mail} title="Email" subject={out.email_subject} body={out.email_body} onCopy={() => copy(`${out.email_subject}\n\n${out.email_body}`, "Email")} onSave={() => save("Email")} mailTo={invoice?.customer?.email} onSendEmail={sendEmail} sendingEmail={sendingEmail} emailSent={emailSent} />
           <OutCard icon={Phone} title="Call script" body={out.call_script} onCopy={() => copy(out.call_script, "Call script")} onSave={() => save("Phone Call")} callPhone={invoice?.customer?.phone} />
         </div>
       )}
@@ -102,14 +119,16 @@ export default function FollowupGenerator() {
   );
 }
 
-const OutCard = ({ icon: Icon, title, subject, body, onCopy, onSave, waPhone, waMessage, mailTo, mailSubject, mailBody, callPhone }) => {
+const OutCard = ({ icon: Icon, title, subject, body, onCopy, onSave, waPhone, waMessage, mailTo, onSendEmail, sendingEmail, emailSent, callPhone }) => {
   const cleanPhone = (p) => (p || "").replace(/[^\d+]/g, "").replace(/^\+/, "");
   const waHref = waPhone ? `https://wa.me/${cleanPhone(waPhone)}?text=${encodeURIComponent(waMessage || "")}` : null;
-  const mailHref = mailTo ? `mailto:${mailTo}?subject=${encodeURIComponent(mailSubject || "")}&body=${encodeURIComponent(mailBody || "")}` : null;
   const telDigits = cleanPhone(callPhone);
   const telHref = callPhone ? `tel:${telDigits.length >= 11 ? "+" : ""}${telDigits}` : null;
-  const sendHref = waHref || mailHref || telHref;
-  const sendLabel = waHref ? "Open in WhatsApp" : mailHref ? "Open in Email" : telHref ? "Call now" : null;
+
+  const isEmailCard = title === "Email";
+  const sendHref = waHref || (!isEmailCard && telHref);
+  const sendLabel = waHref ? "Open in WhatsApp" : telHref ? "Call now" : null;
+
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col">
       <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg bg-[#0A3B2C]/10 text-[#0A3B2C] flex items-center justify-center"><Icon className="w-4 h-4" /></div><h4 className="font-display text-lg font-medium">{title}</h4></div>
@@ -119,12 +138,23 @@ const OutCard = ({ icon: Icon, title, subject, body, onCopy, onSave, waPhone, wa
         <Button size="sm" variant="outline" onClick={onCopy} className="flex-1" data-testid={`copy-${title.toLowerCase().replace(/\s+/g,'-')}-btn`}><Copy className="w-3.5 h-3.5 mr-1.5" /> Copy</Button>
         <Button size="sm" onClick={onSave} className="flex-1 bg-[#0A3B2C] hover:bg-[#072A1F] text-white" data-testid={`save-${title.toLowerCase().replace(/\s+/g,'-')}-btn`}><Send className="w-3.5 h-3.5 mr-1.5" /> Save sent</Button>
       </div>
-      {sendHref && (
+      {isEmailCard ? (
+        <Button
+          size="sm"
+          onClick={onSendEmail}
+          disabled={sendingEmail || emailSent}
+          className={`mt-2 w-full ${emailSent ? 'bg-emerald-600 hover:bg-emerald-600 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
+          data-testid="send-email-btn"
+        >
+          {sendingEmail ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : emailSent ? <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> : <Send className="w-3.5 h-3.5 mr-1.5" />}
+          {sendingEmail ? "Sending…" : emailSent ? "Email sent" : `Send to ${mailTo || "customer"}`}
+        </Button>
+      ) : sendHref ? (
         <a href={sendHref} target="_blank" rel="noopener noreferrer" data-testid={`open-${title.toLowerCase().replace(/\s+/g,'-')}-link`}
            className="mt-2 inline-flex items-center justify-center w-full px-3 py-2 rounded-lg text-sm font-medium border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
           {sendLabel}
         </a>
-      )}
+      ) : null}
     </div>
   );
 };

@@ -37,7 +37,7 @@ from db import (
     engine, async_session, init_db, close_db,
     User, Customer, Invoice, Payment, Followup, Settings,
 )
-from email_service import send_password_reset_email
+from email_service import send_password_reset_email, send_followup_email
 
 setup_logging()
 logger = get_logger("payguard.server")
@@ -850,6 +850,61 @@ async def update_followup(fid: str, payload: FollowUpUpdate, user_id: str = Depe
         return _row_to_dict(result.scalar_one())
 
 
+@api.post("/followups/{fid}/send-email")
+async def send_followup_email_endpoint(fid: str, user_id: str = Depends(get_current_user_id)):
+    async with async_session() as session:
+        result = await session.execute(
+            select(Followup).where(Followup.id == fid, Followup.user_id == user_id)
+        )
+        fu = result.scalar_one_or_none()
+        if not fu:
+            raise HTTPException(status_code=404, detail="Follow-up not found")
+        fu_d = _row_to_dict(fu)
+
+        cust_result = await session.execute(
+            select(Customer).where(Customer.id == fu_d["customer_id"], Customer.user_id == user_id)
+        )
+        cust = cust_result.scalar_one_or_none()
+        if not cust:
+            raise HTTPException(status_code=404, detail="Customer not found")
+        cust_d = _row_to_dict(cust)
+
+        if not cust_d.get("email"):
+            raise HTTPException(status_code=400, detail="Customer has no email address")
+
+        user_result = await session.execute(
+            select(User).where(User.id == user_id)
+        )
+        user = user_result.scalar_one_or_none()
+        business_name = _row_to_dict(user).get("business_name", "Your Business") if user else "Your Business"
+
+        sent = await send_followup_email(
+            to_email=cust_d["email"],
+            customer_name=cust_d.get("business_name", cust_d.get("name", "Customer")),
+            subject=fu_d.get("email_subject", "Payment Follow-up"),
+            body=fu_d.get("email_body", fu_d.get("message", "")),
+            business_name=business_name,
+        )
+        if not sent:
+            raise HTTPException(status_code=502, detail="Failed to send email. Check SMTP configuration.")
+
+        await session.execute(
+            update(Followup).where(Followup.id == fid, Followup.user_id == user_id).values(status="Sent")
+        )
+        await session.commit()
+
+        logger.info(
+            "Follow-up email sent",
+            extra={
+                "event": "followup.email_sent",
+                "user_id": user_id,
+                "followup_id": fid,
+                "to": cust_d["email"],
+            },
+        )
+        return {"ok": True, "message": f"Email sent to {cust_d['email']}"}
+
+
 # ============== AI ==============
 @api.post("/ai/parse-invoice")
 async def ai_parse_invoice(file: UploadFile = File(...), user_id: str = Depends(get_current_user_id)):
@@ -918,6 +973,22 @@ async def ai_generate_followup(payload: AIFollowupRequest, user_id: str = Depend
             previous_followups=prev_count,
             risk_category=cust_d.get("risk_category", "Low Risk"),
         )
+
+        fu_id = new_id()
+        doc = Followup(
+            id=fu_id, user_id=user_id, customer_id=inv_d["customer_id"],
+            invoice_id=payload.invoice_id, followup_type=payload.message_type,
+            message=ai_result.get("whatsapp", ""),
+            email_subject=ai_result.get("email_subject", ""),
+            email_body=ai_result.get("email_body", ""),
+            call_script=ai_result.get("call_script", ""),
+            channel="Email", tone=payload.tone, status="Drafted",
+            created_at=utcnow_iso(),
+        )
+        session.add(doc)
+        await session.commit()
+
+        ai_result["followup_id"] = fu_id
         logger.info(
             "Follow-up generation requested via API",
             extra={
@@ -927,6 +998,7 @@ async def ai_generate_followup(payload: AIFollowupRequest, user_id: str = Depend
                 "tone": payload.tone,
                 "message_type": payload.message_type,
                 "source": ai_result.get("_source", "unknown"),
+                "followup_id": fu_id,
             },
         )
         return ai_result
