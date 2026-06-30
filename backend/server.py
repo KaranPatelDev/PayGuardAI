@@ -962,7 +962,7 @@ async def ai_generate_followup(payload: AIFollowupRequest, user_id: str = Depend
         prev_count = count_result.scalar() or 0
 
         ai_result = await generate_followup_ai(
-            customer_name=cust_d.get("business_name", "Customer"),
+            customer_name=cust_d.get("contact_person") or cust_d.get("business_name") or "Customer",
             invoice_number=inv_d["invoice_number"],
             amount=inv_d.get("total_amount", inv_d["amount"]),
             due_date=inv_d["due_date"],
